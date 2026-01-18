@@ -1,0 +1,10 @@
+{
+  "prompt": "smiling cute furry creature drawn in fantastical and imaginative 2D Children's book Illustration style.  Main subject is surrounded by turtles. Colors are pastel. Black background.",
+  "num_generations": 10,
+  "output_folder": "generated-images",
+  "output_filename": "qwen-image",
+  "size": "1280*720",
+  "seed": -1,
+  "negative_prompt": "",
+  "enable_safety_checker": true
+}

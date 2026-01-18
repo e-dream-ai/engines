@@ -1,0 +1,23 @@
+{
+  "prompt": "smiling cute furry creature drawn in fantastical and surreal 2D Children's book Illustration style.  Main subject is surrounded by friends from myths of all cultures. Colors are pastel. Black background.",
+  "image_path": "images",
+  "size": "1280*720",
+  "duration": 5,
+  "num_inference_steps": 30,
+  "guidance": 5,
+  "seed": 193078717,
+  "negative_prompt": "",
+  "flow_shift": 5,
+  "enable_prompt_optimization": false,
+  "enable_safety_checker": false,
+  "playlist": {
+    "name": "My Wan I2V Batch",
+    "description": "Generated from batch script",
+    "nsfw": false
+  },
+  "combos": [
+    "Everything smiles and dances and wiggles with glee.",
+    "Everything smiles and turns summersaults and spins around.",
+    "Everything and waves hello and goodbye"
+  ]
+}
