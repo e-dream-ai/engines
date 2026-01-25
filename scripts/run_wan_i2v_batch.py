@@ -241,11 +241,15 @@ def main():
                 
                 print(f"  -> Job started: {new_dream['uuid']}")
                 
-                client.add_item_to_playlist(
-                    playlist_uuid=playlist_uuid,
-                    type=PlaylistItemType.DREAM,
-                    item_uuid=new_dream['uuid']
-                )
+                try:
+                    client.add_item_to_playlist(
+                        playlist_uuid=playlist_uuid,
+                        type=PlaylistItemType.DREAM,
+                        item_uuid=new_dream['uuid']
+                    )
+                    print(f"  -> Added to playlist: {playlist_uuid}")
+                except Exception as e:
+                    print(f"  -> Failed to add to playlist {playlist_uuid}: {e}", file=sys.stderr)
                 
                 active_dreams.append(new_dream['uuid'])
                 
