@@ -9,8 +9,6 @@ from dotenv import load_dotenv
 
 try:
     from edream_sdk.client import create_edream_client
-    from edream_sdk.types.file_upload_types import FileType
-    from edream_sdk.types.dream_types import DreamMediaType
     from edream_sdk.types.playlist_types import CreatePlaylistRequest, PlaylistItemType
 except ImportError:
     print("Error: edream_sdk not installed", file=sys.stderr)
@@ -33,33 +31,51 @@ def load_job_config(script_dir: Path) -> Dict[str, Any]:
     with open(job_file, 'r') as f:
         return json.load(f)
 
-def get_images_from_path(image_path: str, base_dir: Path) -> List[Path]:
-    """Get all image files from the image_path directory."""
-    if os.path.isabs(image_path):
-        image_dir = Path(image_path)
-    else:
-        image_dir = base_dir / image_path
-    
-    if not image_dir.exists():
-        raise FileNotFoundError(f"Image directory not found: {image_dir}")
-    
-    if not image_dir.is_dir():
-        raise ValueError(f"image_path must be a directory: {image_dir}")
-    
-    image_extensions = {'.png', '.jpg', '.jpeg', '.webp'}
-    images = [
-        img for img in image_dir.iterdir()
-        if img.is_file() and img.suffix.lower() in image_extensions
-    ]
-    
-    if not images:
-        raise ValueError(f"No image files found in {image_dir}")
-    
-    return sorted(images)
+def get_images_from_playlist(client, playlist_uuid: str) -> List[Dict[str, str]]:
+    """Get image dreams from a playlist."""
+    images: List[Dict[str, str]] = []
+    take = 50
+    skip = 0
 
-def create_job_identifier(image_path: Path, combo_prompt: str) -> str:
-    """Create a unique identifier for an image+combo combination."""
-    image_name = image_path.name
+    while True:
+        response = client.get_playlist_items(playlist_uuid, take=take, skip=skip)
+        items = response.get("items", [])
+
+        for item in items:
+            if item.get("type") != "dream":
+                continue
+            dream = item.get("dreamItem") or {}
+
+            image_url = None
+            for field in ["original_video", "video", "thumbnail"]:
+                url = dream.get(field)
+                if isinstance(url, str) and url.startswith("http"):
+                    image_url = url
+                    break
+
+            if not image_url:
+                continue
+
+            images.append({
+                "uuid": dream.get("uuid", ""),
+                "name": dream.get("name") or dream.get("uuid") or "dream",
+                "url": image_url,
+            })
+
+        total_count = response.get("totalCount")
+        skip += take
+
+        if total_count is None or skip >= total_count:
+            break
+
+    if not images:
+        raise ValueError(f"No image dreams found in playlist: {playlist_uuid}")
+
+    return images
+
+def create_job_identifier(source_id: str, combo_prompt: str) -> str:
+    """Create a unique identifier for a source+combo combination."""
+    image_name = source_id
     combo_hash = hashlib.md5(combo_prompt.encode()).hexdigest()[:8]
     return f"{image_name}:{combo_hash}"
 
@@ -110,15 +126,15 @@ def main():
         print(f"Error loading job.json: {e}", file=sys.stderr)
         sys.exit(1)
     
-    image_path_str = job_config.get("image_path")
-    if not image_path_str:
-        print("'image_path' not found in job.json", file=sys.stderr)
+    image_playlist_uuid = job_config.get("image_playlist_uuid")
+    if not image_playlist_uuid:
+        print("'image_playlist_uuid' not found in job.json", file=sys.stderr)
         sys.exit(1)
     
-    print(f"\nScanning images from: {image_path_str}")
+    print(f"\nFetching images from playlist: {image_playlist_uuid}")
     try:
-        images = get_images_from_path(image_path_str, script_file.parent)
-        print(f"Found {len(images)} image(s)")
+        images = get_images_from_playlist(client, image_playlist_uuid)
+        print(f"Found {len(images)} image(s) in playlist")
     except Exception as e:
         print(f"Error getting images: {e}", file=sys.stderr)
         sys.exit(1)
@@ -161,8 +177,6 @@ def main():
         playlist_uuid = playlist['uuid']
         print(f"Created playlist: {playlist_uuid}")
 
-    uploaded_image_map = {}
-
     print(f"\nStarting batch processing ({total_jobs} total tasks)...")
     
     active_dreams = []
@@ -171,74 +185,28 @@ def main():
     skipped_count = 0
     failed_count = 0
     
-    for image_idx, image_path in enumerate(images, 1):
-        source_dream_uuid = uploaded_image_map.get(str(image_path))
+    for image_idx, image_data in enumerate(images, 1):
+        source_dream_uuid = image_data["url"]
+        source_id = image_data.get("uuid") or image_data.get("name")
         
-        needs_upload = False
         for combo in combos:
-            ident = create_job_identifier(image_path, combo)
+            ident = create_job_identifier(source_id, combo)
             if ident not in existing_identifiers:
-                needs_upload = True
                 break
-        
-        if not needs_upload:
-            print(f"Skipping image {image_path.name} (all combos exist)")
+        else:
+            print(f"Skipping image {image_data['name']} (all combos exist)")
             skipped_count += len(combos)
             continue
-
+        
         if not source_dream_uuid:
-            print(f"\nUploading {image_path.name}...")
-            try:
-                upload_options = {"mediaType": DreamMediaType.IMAGE}
-                uploaded_dream = client.upload_file(
-                    str(image_path), 
-                    type=FileType.DREAM,
-                    options=upload_options
-                )
-                dream_uuid = uploaded_dream['uuid']
-                print(f"  Uploaded as dream: {dream_uuid}")
-                
-                image_url = None
-                max_retries = 10
-                
-                for attempt in range(max_retries):
-                    try:
-                        fetched_dream = client.get_dream(dream_uuid)
-                        
-                        for field in ['original_video', 'video', 'thumbnail']:
-                            url = fetched_dream.get(field)
-                            if url and isinstance(url, str) and url.startswith('http'):
-                                image_url = url
-                                print(f"  Got presigned URL from '{field}'")
-                                break
-                        
-                        if image_url:
-                            break
-                            
-                        if attempt < max_retries - 1:
-                            time.sleep(0.5)
-                            
-                    except Exception as e:
-                        print(f"  Retry {attempt + 1}/{max_retries}: {e}")
-                        if attempt < max_retries - 1:
-                            time.sleep(0.5)
-                
-                if image_url:
-                    source_dream_uuid = image_url
-                else:
-                    print(f"  Warning: No presigned URL after {max_retries} attempts. Using UUID (may fail).")
-                    source_dream_uuid = dream_uuid
-                
-                uploaded_image_map[str(image_path)] = source_dream_uuid
-            except Exception as e:
-                print(f"  Failed to upload image: {e}")
-                failed_count += len(combos)
-                continue
+            print(f"Skipping image {image_data['name']} (missing URL)")
+            skipped_count += len(combos)
+            continue
 
         for combo in combos:
             job_count += 1
             combo_idx = combos.index(combo) + 1
-            identifier = create_job_identifier(image_path, combo)
+            identifier = create_job_identifier(source_id, combo)
             
             if identifier in existing_identifiers:
                 print(f"[{job_count}/{total_jobs}] Skipping existing: {identifier}")
@@ -248,7 +216,7 @@ def main():
             main_prompt = job_config.get("prompt", "")
             combined_prompt = f"{main_prompt} {combo}".strip()
             
-            print(f"[{job_count}/{total_jobs}] creating dream for {image_path.name} + combo {combo_idx}")
+            print(f"[{job_count}/{total_jobs}] creating dream for {image_data['name']} + combo {combo_idx}")
             
             algo_params = {
                 "infinidream_algorithm": "wan-i2v",
@@ -262,7 +230,7 @@ def main():
                     algo_params[param] = job_config[param]
 
             try:
-                dream_name = f"{image_path.stem}_combo-{combo_idx}"
+                dream_name = f"{image_data['name']}_combo-{combo_idx}"
                 desc_identifier = f"BATCH_IDENTIFIER:{identifier}"
                 
                 new_dream = client.create_dream_from_prompt({

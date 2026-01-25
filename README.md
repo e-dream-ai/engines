@@ -24,12 +24,12 @@ These scripts are located in `engines/scripts/` and use the `edream_sdk` to inte
 
 ### 1. Wan Image-to-Video Batch (`run_wan_i2v_batch.py`)
 
-Generates videos from a directory of images using the Wan I2V algorithm with various prompt combinations.
+Generates videos from a playlist of image dreams using the Wan I2V algorithm with various prompt combinations.
 
 **Configuration (`engines/scripts/job.json`):**
 ```json
 {
-  "image_path": "/absolute/path/to/images",
+  "image_playlist_uuid": "source-image-playlist-uuid",
   "prompt": "A cinematic shot of...",
   "combos": ["in a cyberpunk city", "underwater"],
   "playlist_uuid": "optional-existing-playlist-uuid",
@@ -89,6 +89,33 @@ Generates multiple images from a prompt and downloads them locally.
   "output_folder": "generated_images",
   "size": "1024x1024",
   "seed": -1
+}
+```
+Example (use an existing playlist):
+```json
+{
+  "prompt": "A futuristic cityscape...",
+  "num_generations": 5,
+  "output_folder": "generated_images",
+  "size": "1024x1024",
+  "seed": -1,
+  "playlist_uuid": "existing-playlist-uuid"
+}
+```
+
+Example (create a new playlist):
+```json
+{
+  "prompt": "A futuristic cityscape...",
+  "num_generations": 5,
+  "output_folder": "generated_images",
+  "size": "1024x1024",
+  "seed": -1,
+  "playlist": {
+    "name": "Qwen Image Batch",
+    "description": "Generated from qwen image batch script",
+    "nsfw": false
+  }
 }
 ```
 

@@ -9,6 +9,7 @@ import requests
 
 try:
     from edream_sdk.client import create_edream_client
+    from edream_sdk.types.playlist_types import CreatePlaylistRequest, PlaylistItemType
 except ImportError:
     print("Error: edream_sdk not installed", file=sys.stderr)
     print("Install it with: pip install -r requirements.txt", file=sys.stderr)
@@ -86,6 +87,30 @@ def main():
     print(f"\nOutput directory: {output_dir}")
     print(f"\nPrompt: {prompt}")
     print(f"Number of generations: {num_generations}")
+
+    playlist_uuid = config.get("playlist_uuid")
+    playlist = None
+
+    if playlist_uuid:
+        print(f"\nUsing existing playlist: {playlist_uuid}")
+        try:
+            playlist = client.get_playlist(playlist_uuid)
+            print(f"Found playlist: {playlist.get('name', 'Unnamed')}")
+        except Exception as e:
+            print(f"Error accessing playlist: {e}")
+            playlist_uuid = None
+
+    if not playlist_uuid:
+        playlist_config = config.get("playlist", {})
+        playlist_data: CreatePlaylistRequest = {
+            "name": playlist_config.get("name", "Qwen Image Batch"),
+            "description": playlist_config.get("description", f"Batch generated from: {prompt}"),
+            "nsfw": playlist_config.get("nsfw", False),
+        }
+        print(f"\nCreating playlist: {playlist_data['name']}")
+        playlist = client.create_playlist(playlist_data)
+        playlist_uuid = playlist["uuid"]
+        print(f"Created playlist: {playlist_uuid}")
     
     active_jobs = []
     
@@ -115,6 +140,14 @@ def main():
                 "prompt": json.dumps(algo_params)
             })
             print(f"  -> Job started: {dream['uuid']}")
+            try:
+                client.add_item_to_playlist(
+                    playlist_uuid=playlist_uuid,
+                    type=PlaylistItemType.DREAM,
+                    item_uuid=dream['uuid']
+                )
+            except Exception as e:
+                print(f"  -> Failed to add to playlist: {e}")
             active_jobs.append((dream['uuid'], idx))
         except Exception as e:
             print(f"  -> Failed to start job: {e}")
@@ -182,7 +215,8 @@ def main():
         print(f"Timeout waiting for {len(pending)} jobs.")
         
     print(f"\nCompleted. Downloaded {downloaded_count} images.")
+    if playlist_uuid:
+        print(f"Playlist: {playlist_uuid}")
 
 if __name__ == "__main__":
     main()
-
