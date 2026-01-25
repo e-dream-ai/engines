@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 from typing import Dict, Any
 from dotenv import load_dotenv
-import requests
 
 try:
     from edream_sdk.client import create_edream_client
@@ -29,21 +28,6 @@ def load_config(script_dir: Path) -> Dict[str, Any]:
     
     with open(config_file, 'r') as f:
         return json.load(f)
-
-def download_image(url: str, output_path: Path) -> bool:
-    """Download an image from a URL to a local file."""
-    try:
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()
-        
-        with open(output_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        
-        return True
-    except Exception as e:
-        print(f"Error downloading image from {url}: {e}", file=sys.stderr)
-        return False
 
 def main():
     print(f"Script directory: {script_file.parent}")
@@ -190,7 +174,7 @@ def main():
                         output_path = output_dir / filename
                         
                         print(f"  Downloading to {output_path}...")
-                        if download_image(image_url, output_path):
+                        if client.download_file(image_url, str(output_path)):
                             print("  Success!")
                             downloaded_count += 1
                         else:
