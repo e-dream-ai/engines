@@ -26,7 +26,7 @@ These scripts are located in `engines/scripts/` and use the `edream_sdk` to inte
 
 Generates videos from a playlist of image dreams using the Wan I2V algorithm with various prompt combinations.
 
-**Configuration (`engines/scripts/job.json`):**
+**Configuration (`engines/configs/job.json`):**
 ```json
 {
   "image_playlist_uuid": "source-image-playlist-uuid",
@@ -53,7 +53,7 @@ python3 scripts/run_wan_i2v_batch.py
 
 Upscales video dreams from a source playlist and adds them to an output playlist. It tracks processed videos to avoid duplication.
 
-**Configuration (`engines/scripts/uprez-config.json`):**
+**Configuration (`engines/configs/uprez-config.json`):**
 ```json
 {
   "playlist_uuid": "source-playlist-uuid",
@@ -81,7 +81,7 @@ python3 scripts/run_uprez_batch.py
 
 Generates multiple images from a prompt and downloads them locally.
 
-**Configuration (`engines/scripts/qwen-image-config.json`):**
+**Configuration (`engines/configs/qwen-image-config.json`):**
 ```json
 {
   "prompt": "A futuristic cityscape...",
@@ -122,4 +122,46 @@ Example (create a new playlist):
 **Usage:**
 ```bash
 python3 scripts/run_qwen_image_batch.py
+```
+
+### 4. Z-Image Turbo Batch (`run_z_image_turbo_batch.py`)
+
+Generates images using the Z-Image Turbo model. Supports text-to-image and image-to-image generation.
+
+**Configuration (`engines/configs/z-image-turbo-config.json`):**
+```json
+{
+  "prompt": "a beautiful landscape with mountains and a lake",
+  "num_generations": 2,
+  "output_folder": "generated-images",
+  "output_filename": "z-image-turbo",
+  "size": "1024*1024",
+  "seed": -1,
+  "output_format": "png",
+  "enable_safety_checker": true,
+  "playlist": {
+    "name": "Z-Image Turbo Batch",
+    "description": "Generated from z-image-turbo batch script",
+    "nsfw": false
+  }
+}
+```
+
+For image-to-image, add `image` (URL) and optionally `strength` (0.0–1.0):
+```json
+{
+  "prompt": "a futuristic version of this scene",
+  "image": "https://example.com/input.jpg",
+  "strength": 0.8,
+  "output_format": "jpeg"
+}
+```
+
+Valid `size` options: `512*512`, `768*768`, `1024*1024`, `1280*1280`, `1024*768`, `768*1024`, `1280*720`, `720*1280`
+
+Valid `output_format` options: `png`, `jpeg`, `webp`
+
+**Usage:**
+```bash
+python3 scripts/run_z_image_turbo_batch.py
 ```

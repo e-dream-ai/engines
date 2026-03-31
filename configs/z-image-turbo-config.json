@@ -1,0 +1,15 @@
+{
+  "prompt": "a beautiful landscape with mountains and a lake, photorealistic, 4k",
+  "num_generations": 2,
+  "output_folder": "generated-images",
+  "output_filename": "z-image-turbo",
+  "size": "1024*1024",
+  "seed": -1,
+  "output_format": "png",
+  "enable_safety_checker": true,
+  "playlist": {
+    "name": "Z-Image Turbo Batch",
+    "description": "Generated from z-image-turbo batch script",
+    "nsfw": false
+  }
+}

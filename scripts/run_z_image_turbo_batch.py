@@ -18,110 +18,92 @@ script_file = Path(__file__).resolve()
 engines_dir = script_file.parent.parent
 load_dotenv(engines_dir / ".env")
 if not os.environ.get("API_KEY"):
-     load_dotenv(engines_dir.parent / ".env")
+    load_dotenv(engines_dir.parent / ".env")
+
 
 def load_config(engines_dir: Path) -> Dict[str, Any]:
-    config_file = engines_dir / "configs" / "qwen-image-config.json"
+    config_file = engines_dir / "configs" / "z-image-turbo-config.json"
     if not config_file.exists():
-        raise FileNotFoundError(f"qwen-image-config.json not found at {config_file}")
+        raise FileNotFoundError(f"z-image-turbo-config.json not found at {config_file}")
     with open(config_file, 'r') as f:
         return json.load(f)
 
+
 def main():
-    print(f"Script directory: {script_file.parent}")
-    
     backend_url = os.environ.get("BACKEND_URL", "https://api.infinidream.ai/api/v1")
     api_key = os.environ.get("API_KEY")
-    
+
     if not api_key:
         print("Error: API_KEY not found", file=sys.stderr)
         sys.exit(1)
-        
+
     client = create_edream_client(backend_url, api_key)
-    print(f"Connected to {backend_url}")
-    
-    print("\nLoading qwen-image-config.json...")
+
     try:
         config = load_config(engines_dir)
-        print(f"Loaded qwen-image-config.json")
     except Exception as e:
-        print(f"Error loading qwen-image-config.json: {e}", file=sys.stderr)
+        print(f"Error loading config: {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     prompt = config.get("prompt")
     if not prompt:
-        print("'prompt' not found in qwen-image-config.json", file=sys.stderr)
+        print("'prompt' not found in z-image-turbo-config.json", file=sys.stderr)
         sys.exit(1)
-    
+
     num_generations = config.get("num_generations", 1)
     if num_generations < 1:
         print("'num_generations' must be at least 1", file=sys.stderr)
         sys.exit(1)
-        
+
     output_folder = config.get("output_folder", "generated-images")
-    
-    if os.path.isabs(output_folder):
-        output_dir = Path(output_folder)
-    else:
-        output_dir = engines_dir / output_folder
-    
+    output_dir = Path(output_folder) if os.path.isabs(output_folder) else engines_dir / output_folder
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"\nOutput directory: {output_dir}")
-    print(f"\nPrompt: {prompt}")
-    print(f"Number of generations: {num_generations}")
 
     playlist_uuid = config.get("playlist_uuid")
-    playlist = None
 
     if playlist_uuid:
-        print(f"\nUsing existing playlist: {playlist_uuid}")
         try:
-            playlist = client.get_playlist(playlist_uuid)
-            print(f"Found playlist: {playlist.get('name', 'Unnamed')}")
-        except Exception as e:
-            print(f"Error accessing playlist: {e}")
+            client.get_playlist(playlist_uuid)
+        except Exception:
             playlist_uuid = None
 
     if not playlist_uuid:
         playlist_config = config.get("playlist", {})
         playlist_data: CreatePlaylistRequest = {
-            "name": playlist_config.get("name", "Qwen Image Batch"),
+            "name": playlist_config.get("name", "Z-Image Turbo Batch"),
             "description": playlist_config.get("description", f"Batch generated from: {prompt}"),
             "nsfw": playlist_config.get("nsfw", False),
         }
-        print(f"\nCreating playlist: {playlist_data['name']}")
         playlist = client.create_playlist(playlist_data)
         playlist_uuid = playlist["uuid"]
         print(f"Created playlist: {playlist_uuid}")
-    
+
     active_jobs = []
-    
+
     for idx in range(1, num_generations + 1):
         seed = config.get("seed")
         if seed is None or seed == -1:
             seed = -1 if idx == 1 else None
-            
-        print(f"[{idx}/{num_generations}] Submitting job...")
-        
+
         algo_params = {
-            "infinidream_algorithm": "qwen-image",
+            "infinidream_algorithm": "z-image-turbo",
             "prompt": prompt,
         }
-        
+
         if seed is not None and seed != -1:
             algo_params["seed"] = seed
-            
-        for param in ["size", "negative_prompt", "enable_safety_checker"]:
+
+        for param in ["image", "size", "strength", "output_format", "enable_safety_checker"]:
             if param in config:
                 algo_params[param] = config[param]
 
         try:
             dream = client.create_dream_from_prompt({
-                "name": f"Qwen Image {idx}",
+                "name": f"Z-Image Turbo {idx}",
                 "description": f"Generated image {idx}",
                 "prompt": json.dumps(algo_params)
             })
-            print(f"  -> Job started: {dream['uuid']}")
+            print(f"[{idx}/{num_generations}] Started: {dream['uuid']}")
             try:
                 client.add_item_to_playlist(
                     playlist_uuid=playlist_uuid,
@@ -129,76 +111,63 @@ def main():
                     item_uuid=dream['uuid']
                 )
             except Exception as e:
-                print(f"  -> Failed to add to playlist: {e}")
+                print(f"Failed to add to playlist: {e}")
             active_jobs.append((dream['uuid'], idx))
         except Exception as e:
-            print(f"  -> Failed to start job: {e}")
+            print(f"[{idx}/{num_generations}] Failed to start: {e}")
 
     if not active_jobs:
         print("No jobs started.")
         return
 
-    print(f"\nWaiting for {len(active_jobs)} jobs to complete...")
-    
     pending = list(active_jobs)
     downloaded_count = 0
-    poll_interval = 10
     start_time = time.time()
-    max_wait = 3600
-    
-    while pending and (time.time() - start_time) < max_wait:
+
+    while pending and (time.time() - start_time) < 3600:
         remaining = []
-        
+
         for uuid, idx in pending:
             try:
                 dream = client.get_dream(uuid)
                 status = dream.get("status")
-                
+
                 if status == "processed":
-                    print(f"Job finished: {uuid} (Gen {idx})")
-                    
-                    image_url = dream.get("thumbnail")
-                    
-                    if not image_url:
-                        image_url = dream.get("video")
+                    image_url = dream.get("thumbnail") or dream.get("video")
 
                     if image_url:
-                        base_filename = config.get("output_filename", "qwen-image")
-                        if num_generations > 1:
-                            filename = f"{base_filename}_{idx:04d}.png"
-                        else:
-                            filename = f"{base_filename}.png"
-                        
+                        output_format = config.get("output_format", "png")
+                        base_filename = config.get("output_filename", "z-image-turbo")
+                        filename = f"{base_filename}_{idx:04d}.{output_format}" if num_generations > 1 else f"{base_filename}.{output_format}"
                         output_path = output_dir / filename
-                        
-                        print(f"  Downloading to {output_path}...")
+
                         if client.download_file(image_url, str(output_path)):
-                            print("  Success!")
+                            print(f"Downloaded: {output_path}")
                             downloaded_count += 1
                         else:
-                             print("  Download failed.")
+                            print(f"Download failed: {uuid}")
                     else:
-                        print("  Warning: No image URL found in dream object.")
-                        
+                        print(f"No image URL for: {uuid}")
+
                 elif status == "failed":
                     print(f"Job failed: {uuid}")
                 else:
                     remaining.append((uuid, idx))
-                    
+
             except Exception as e:
-                print(f"Error checking status for {uuid}: {e}")
+                print(f"Error checking {uuid}: {e}")
                 remaining.append((uuid, idx))
-        
+
         pending = remaining
         if pending:
-            time.sleep(poll_interval)
-            
+            time.sleep(10)
+
     if pending:
-        print(f"Timeout waiting for {len(pending)} jobs.")
-        
-    print(f"\nCompleted. Downloaded {downloaded_count} images.")
-    if playlist_uuid:
-        print(f"Playlist: {playlist_uuid}")
+        print(f"Timeout: {len(pending)} jobs did not complete.")
+
+    print(f"Done. Downloaded {downloaded_count}/{len(active_jobs)} images.")
+    print(f"Playlist: {playlist_uuid}")
+
 
 if __name__ == "__main__":
     main()

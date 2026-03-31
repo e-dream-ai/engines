@@ -1,0 +1,11 @@
+src/
+
+generated-images/
+
+# env
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/

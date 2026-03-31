@@ -21,11 +21,10 @@ load_dotenv(engines_dir / ".env")
 if not os.environ.get("API_KEY"):
      load_dotenv(engines_dir.parent / ".env")
 
-def load_config(script_dir: Path) -> Dict[str, Any]:
-    config_file = script_dir / "uprez-config.json"
+def load_config(engines_dir: Path) -> Dict[str, Any]:
+    config_file = engines_dir / "configs" / "uprez-config.json"
     if not config_file.exists():
         raise FileNotFoundError(f"uprez-config.json not found at {config_file}")
-    
     with open(config_file, 'r') as f:
         return json.load(f)
 
@@ -112,7 +111,7 @@ def main():
     
     print("\nLoading uprez-config.json...")
     try:
-        config = load_config(script_file.parent)
+        config = load_config(engines_dir)
         print(f"Loaded uprez-config.json")
     except Exception as e:
         print(f"Error loading uprez-config.json: {e}", file=sys.stderr)

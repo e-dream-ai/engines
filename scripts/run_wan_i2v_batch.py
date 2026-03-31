@@ -22,12 +22,10 @@ load_dotenv(engines_dir / ".env")
 if not os.environ.get("API_KEY"):
      load_dotenv(engines_dir.parent / ".env")
 
-def load_job_config(script_dir: Path) -> Dict[str, Any]:
-    """Load job.json from scripts directory."""
-    job_file = script_dir / "job.json"
+def load_job_config(engines_dir: Path) -> Dict[str, Any]:
+    job_file = engines_dir / "configs" / "job.json"
     if not job_file.exists():
         raise FileNotFoundError(f"job.json not found at {job_file}")
-    
     with open(job_file, 'r') as f:
         return json.load(f)
 
@@ -120,7 +118,7 @@ def main():
 
     print("\nLoading job.json...")
     try:
-        job_config = load_job_config(script_file.parent)
+        job_config = load_job_config(engines_dir)
         print(f"Loaded job.json")
     except Exception as e:
         print(f"Error loading job.json: {e}", file=sys.stderr)
