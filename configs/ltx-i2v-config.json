@@ -1,0 +1,12 @@
+{
+  "image_uuid": "10695379-a7a3-485f-9e8b-eb94112f2e77",
+  "prompt": "A cinematic shot of mountains.",
+  "duration": 5,
+  "seed": -1,
+  "lora": "ltx-2-19b-lora-camera-control-static.safetensors",
+  "lora_strength": 0.4,
+  "playlist": {
+    "name": "LTX I2V Output",
+    "nsfw": false
+  }
+}
