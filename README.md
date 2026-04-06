@@ -124,7 +124,80 @@ Example (create a new playlist):
 python3 scripts/run_qwen_image_batch.py
 ```
 
-### 4. Z-Image Turbo Batch (`run_z_image_turbo_batch.py`)
+### 4. LTX Image-to-Video Batch (`run_ltx_i2v_batch.py`)
+
+Generates videos from a playlist of image dreams using LTX 2.3.
+
+**Configuration (`engines/configs/ltx-i2v-config.json`):**
+
+Single image:
+```json
+{
+  "image_uuid": "your-dream-uuid",
+  "prompt": "A cinematic shot of...",
+  "duration": 5,
+  "seed": -1,
+  "playlist": { "name": "LTX I2V Output", "nsfw": false }
+}
+```
+
+Batch from playlist:
+```json
+{
+  "image_playlist_uuid": "source-image-playlist-uuid",
+  "prompt": "A cinematic shot of...",
+  "combos": ["in a cyberpunk city", "underwater"],
+  "playlist_uuid": "optional-existing-playlist-uuid",
+  "playlist": { "name": "LTX I2V Batch Output", "nsfw": false },
+  "duration": 5,
+  "seed": -1,
+  "lora": "ltx-2-19b-lora-camera-control-static.safetensors",
+  "lora_strength": 0.4
+}
+```
+
+**Usage:**
+```bash
+python3 scripts/run_ltx_i2v_batch.py
+```
+
+### 5. Nvidia VSR Batch (`run_nvidia_vsr_batch.py`)
+
+Upscales video dreams using Nvidia RTX Video Super Resolution. Tracks processed videos to avoid duplication.
+
+**Configuration (`engines/configs/nvidia-vsr-config.json`):**
+
+Single video:
+```json
+{
+  "video_uuid": "your-dream-uuid",
+  "output_playlist": { "name": "Nvidia VSR Output", "nsfw": false },
+  "vsr_config": { "upscale_factor": 2, "quality": "ULTRA" },
+  "tracking": { "marker": "nvidia-vsr" }
+}
+```
+
+Batch from playlist:
+```json
+{
+  "playlist_uuid": "source-playlist-uuid",
+  "output_playlist": { "name": "Nvidia VSR Output", "nsfw": false },
+  "vsr_config": { "upscale_factor": 2, "quality": "ULTRA" },
+  "tracking": {
+    "marker": "nvidia-vsr",
+    "existing_playlist_uuid": "optional-output-playlist-uuid"
+  }
+}
+```
+
+Valid `quality` options: `LOW`, `MEDIUM`, `HIGH`, `ULTRA`
+
+**Usage:**
+```bash
+python3 scripts/run_nvidia_vsr_batch.py
+```
+
+### 6. Z-Image Turbo Batch (`run_z_image_turbo_batch.py`)
 
 Generates images using the Z-Image Turbo model. Supports text-to-image and image-to-image generation.
 
