@@ -172,7 +172,7 @@ def main():
     failed_count = 0
 
     for image_data in images:
-        source_dream_uuid = image_data["url"]
+        source_dream_uuid = image_data.get("uuid") or image_data["url"]
         source_id = image_data.get("uuid") or image_data.get("name")
 
         for combo in combos:
