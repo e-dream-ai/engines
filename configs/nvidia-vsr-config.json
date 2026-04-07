@@ -1,17 +1,14 @@
 {
   "video_uuid": null,
-  "playlist_uuid": "YOUR_SOURCE_PLAYLIST_UUID",
   "output_playlist": {
     "name": "Nvidia VSR Output",
-    "description": "",
     "nsfw": false
   },
   "vsr_config": {
     "upscale_factor": 2,
-    "quality": "ULTRA"
+    "quality": "HIGH"
   },
   "tracking": {
-    "marker": "nvidia-vsr",
-    "existing_playlist_uuid": null
+    "marker": "nvidia-vsr"
   }
 }
