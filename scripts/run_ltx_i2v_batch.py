@@ -204,7 +204,7 @@ def main():
             algo_params = {
                 "infinidream_algorithm": "ltx-i2v",
                 "prompt": combined_prompt,
-                "image": source_dream_uuid,
+                "source_dream_uuid": source_dream_uuid,
             }
 
             for param in ["duration", "seed", "negative_prompt", "lora", "lora_strength"]:
