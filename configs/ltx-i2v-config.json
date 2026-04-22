@@ -5,6 +5,7 @@
   "seed": -1,
   "lora": "ltx-2-19b-lora-camera-control-static.safetensors",
   "lora_strength": 0.4,
+  "ccbyLicense": true,
   "playlist": {
     "name": "LTX I2V Output",
     "nsfw": false

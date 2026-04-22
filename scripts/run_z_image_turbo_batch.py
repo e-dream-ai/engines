@@ -101,7 +101,8 @@ def main():
             dream = client.create_dream_from_prompt({
                 "name": f"Z-Image Turbo {idx}",
                 "description": f"Generated image {idx}",
-                "prompt": json.dumps(algo_params)
+                "prompt": json.dumps(algo_params),
+                "ccbyLicense": config.get("ccbyLicense", True)
             })
             print(f"[{idx}/{num_generations}] Started: {dream['uuid']}")
             try:

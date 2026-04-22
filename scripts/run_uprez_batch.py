@@ -198,7 +198,8 @@ def main():
             new_dream = client.create_dream_from_prompt({
                 "name": f"{dream_name} (Uprez)",
                 "description": f"Uprez of {dream_uuid}",
-                "prompt": json.dumps(algo_params)
+                "prompt": json.dumps(algo_params),
+                "ccbyLicense": config.get("ccbyLicense", True)
             })
             
             print(f"  -> Uprez job started: {new_dream['uuid']}")

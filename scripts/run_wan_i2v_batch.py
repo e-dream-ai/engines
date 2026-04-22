@@ -234,7 +234,8 @@ def main():
                 new_dream = client.create_dream_from_prompt({
                     "name": dream_name,
                     "description": f"Batch generation. {desc_identifier}",
-                    "prompt": json.dumps(algo_params)
+                    "prompt": json.dumps(algo_params),
+                    "ccbyLicense": job_config.get("ccbyLicense", True)
                 })
                 
                 print(f"  -> Job started: {new_dream['uuid']}")

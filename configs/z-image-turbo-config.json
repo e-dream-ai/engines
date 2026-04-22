@@ -7,6 +7,7 @@
   "seed": -1,
   "output_format": "png",
   "enable_safety_checker": true,
+  "ccbyLicense": true,
   "playlist": {
     "name": "Z-Image Turbo Batch",
     "description": "Generated from z-image-turbo batch script",

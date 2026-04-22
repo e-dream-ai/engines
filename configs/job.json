@@ -10,6 +10,7 @@
   "flow_shift": 5,
   "enable_prompt_optimization": false,
   "enable_safety_checker": false,
+  "ccbyLicense": true,
   "playlist": {
     "name": "My Wan I2V Batch",
     "description": "Generated from batch script",

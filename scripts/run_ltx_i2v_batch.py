@@ -215,7 +215,8 @@ def main():
                 new_dream = client.create_dream_from_prompt({
                     "name": f"{image_data['name']}_combo-{combo_idx}",
                     "description": f"Batch generation. BATCH_IDENTIFIER:{identifier}",
-                    "prompt": json.dumps(algo_params)
+                    "prompt": json.dumps(algo_params),
+                    "ccbyLicense": config.get("ccbyLicense", True)
                 })
 
                 print(f"  Started: {new_dream['uuid']}")
