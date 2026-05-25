@@ -1,0 +1,35 @@
+{
+  "batch_name": "DreamZoom",
+  "animation_mode": "2D",
+  "width": 512,
+  "height": 512,
+  "steps": 50,
+  "skip_steps": 10,
+  "frames_skip_steps": "70%",
+  "frames_scale": 1500,
+  "max_frames": 24,
+  "key_frames": true,
+  "interp_spline": "Linear",
+  "angle": "0:(0)",
+  "zoom": "0:(1.02)",
+  "translation_x": "0:(0)",
+  "translation_y": "0:(0)",
+  "clip_guidance_scale": 3000,
+  "tv_scale": 0,
+  "range_scale": 150,
+  "sat_scale": 0,
+  "cutn_batches": 1,
+  "clip_vit_b32": true,
+  "clip_rn50": false,
+  "diffusion_model": "512x512_diffusion_uncond_finetune_008100",
+  "diffusion_sampling_mode": "ddim",
+  "seed": 42,
+  "fps": 6,
+  "text_prompts": {
+    "0": ["A stunning cosmic nebula with swirling galaxies and stars, trending on artstation, by Greg Rutkowski and Beeple, digital art, highly detailed"]
+  },
+  "playlist": {
+    "name": "Disco Diffusion Output",
+    "nsfw": false
+  }
+}
