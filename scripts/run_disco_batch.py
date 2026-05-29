@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -22,10 +23,12 @@ if not os.environ.get("API_KEY"):
     load_dotenv(engines_dir.parent / ".env")
 
 
-def load_config(engines_dir: Path) -> dict:
-    config_file = engines_dir / "configs" / "disco-config.json"
+def load_config(engines_dir: Path, config_name: str) -> dict:
+    config_file = Path(config_name)
+    if not config_file.is_absolute():
+        config_file = engines_dir / "configs" / config_name
     if not config_file.exists():
-        raise FileNotFoundError(f"disco-config.json not found at {config_file}")
+        raise FileNotFoundError(f"config not found at {config_file}")
     with open(config_file) as f:
         return json.load(f)
 
@@ -39,6 +42,16 @@ def get_or_create_playlist(client, config: dict) -> str:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run a Disco Diffusion batch.")
+    parser.add_argument(
+        "--style-transfer",
+        action="store_true",
+        help="Use disco-style-transfer-config.json instead of disco-config.json",
+    )
+    args = parser.parse_args()
+
+    config_name = "disco-style-transfer-config.json" if args.style_transfer else "disco-config.json"
+
     backend_url = os.environ.get("BACKEND_URL", "https://api-stage.infinidream.ai/api/v1")
     api_key = os.environ.get("API_KEY")
 
@@ -48,7 +61,7 @@ def main():
 
     client = create_edream_client(backend_url, api_key)
 
-    config = load_config(engines_dir)
+    config = load_config(engines_dir, config_name)
 
     playlist_uuid = get_or_create_playlist(client, config)
     print(f"Playlist: {playlist_uuid}")
