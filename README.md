@@ -338,3 +338,86 @@ Valid `output_format` options: `png`, `jpeg`, `webp`
 ```bash
 python3 scripts/run_z_image_turbo_batch.py
 ```
+
+---
+
+### 7. FLUX Schnell Batch (`run_flux_schnell_batch.py`)
+
+Text-to-image generation with FLUX.1 [schnell] (fal). Downloads results locally.
+
+**Configuration (`engines/configs/flux-schnell-config.json`):**
+
+```json
+{
+    "prompt": "A vibrant sunset over ocean waves, photorealistic.",
+    "num_generations": 2,
+    "output_folder": "generated-images",
+    "output_filename": "flux-schnell",
+    "size": "1280*720",
+    "num_inference_steps": 4,
+    "seed": -1,
+    "playlist": { "name": "FLUX Schnell Batch", "nsfw": false }
+}
+```
+
+Valid `size` options: `1024*768`, `1024*1024`, `768*1024`, `1280*720`, `720*1280`
+
+**Usage:**
+
+```bash
+python3 scripts/run_flux_schnell_batch.py
+```
+
+### 8. FLUX Kontext Image-to-Image Batch (`run_flux_kontext_i2i_batch.py`)
+
+Re-imagines source images with an edit prompt using FLUX.1 Kontext (fal). Output
+follows the source size, so there is no `size` parameter. Sources come from a
+single `image_uuid` or an `image_playlist_uuid`.
+
+**Configuration (`engines/configs/flux-kontext-i2i-config.json`):**
+
+```json
+{
+    "image_uuid": "your-source-image-dream-uuid",
+    "prompt": "Turn it into a watercolor painting with soft pastel colors.",
+    "seed": -1,
+    "output_folder": "generated-images",
+    "output_filename": "flux-kontext",
+    "playlist": { "name": "FLUX Kontext I2I Batch", "nsfw": false }
+}
+```
+
+**Usage:**
+
+```bash
+python3 scripts/run_flux_kontext_i2i_batch.py
+```
+
+### 9. Kling Image-to-Video Batch (`run_kling_i2v_batch.py`)
+
+Animates source images with a prompt using Kling (fal). Set `model` to
+`kling-i2v` (Kling 3.0 Pro) or `kling-25-i2v` (Kling 2.5 Turbo Pro). Video results
+are auto-uploaded to their dream, so nothing is downloaded locally.
+
+**Configuration (`engines/configs/kling-i2v-config.json`):**
+
+```json
+{
+    "model": "kling-i2v",
+    "image_uuid": "your-source-image-dream-uuid",
+    "prompt": "The scene comes alive with gentle, cinematic motion.",
+    "duration": 5,
+    "negative_prompt": "",
+    "cfg_scale": 0.5,
+    "playlist": { "name": "Kling I2V Batch", "nsfw": false }
+}
+```
+
+Durations: `kling-i2v` allows 3–15s; `kling-25-i2v` allows 5s or 10s. Optionally
+set `end_source_uuid` for an end frame.
+
+**Usage:**
+
+```bash
+python3 scripts/run_kling_i2v_batch.py
+```

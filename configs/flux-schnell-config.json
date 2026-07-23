@@ -1,0 +1,15 @@
+{
+  "prompt": "A vibrant sunset over ocean waves, photorealistic, highly detailed.",
+  "num_generations": 1,
+  "output_folder": "generated-images",
+  "output_filename": "flux-schnell",
+  "size": "1280*720",
+  "num_inference_steps": 4,
+  "seed": -1,
+  "ccbyLicense": true,
+  "playlist": {
+    "name": "FLUX Schnell Batch",
+    "description": "Generated from flux schnell batch script",
+    "nsfw": false
+  }
+}

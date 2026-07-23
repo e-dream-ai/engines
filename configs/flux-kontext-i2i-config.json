@@ -1,0 +1,13 @@
+{
+  "image_uuid": "e362ad15-5b50-40b7-8667-af5fcad5962d",
+  "prompt": "Turn it into a watercolor painting with soft pastel colors.",
+  "seed": -1,
+  "output_folder": "generated-images",
+  "output_filename": "flux-kontext",
+  "ccbyLicense": true,
+  "playlist": {
+    "name": "FLUX Kontext I2I Batch",
+    "description": "Image-to-image results from flux kontext batch script",
+    "nsfw": false
+  }
+}
