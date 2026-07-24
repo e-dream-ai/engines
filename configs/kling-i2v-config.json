@@ -1,6 +1,6 @@
 {
   "model": "kling-i2v",
-  "image_uuid": "fcfa8e96-ca77-49f6-b400-e0e9d7d7e819",
+  "image_uuid": "your-source-image-dream-uuid",
   "prompt": "The scene comes alive with gentle, cinematic motion.",
   "duration": 3,
   "negative_prompt": "",

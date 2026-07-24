@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 try:
     from edream_sdk.client import create_edream_client
     from edream_sdk.types.playlist_types import PlaylistItemType
+    from edream_sdk.utils.env import require_env
 except ImportError:
     print("Error: edream_sdk not installed. Run: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
@@ -56,15 +57,8 @@ def bootstrap(config_file: str) -> tuple[EdreamClient, dict[str, Any]]:
     if not os.environ.get("API_KEY"):
         load_dotenv(ENGINES_DIR.parent / ".env")
 
-    api_key = os.environ.get("API_KEY")
-    if not api_key:
-        print("Error: API_KEY not found in environment or .env", file=sys.stderr)
-        sys.exit(1)
-
-    backend_url = os.environ.get("BACKEND_URL")
-    if not backend_url:
-        print("Error: BACKEND_URL not found in environment or .env", file=sys.stderr)
-        sys.exit(1)
+    backend_url = require_env("BACKEND_URL")
+    api_key = require_env("API_KEY")
 
     config_path = ENGINES_DIR / "configs" / config_file
     if not config_path.exists():

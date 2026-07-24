@@ -15,6 +15,8 @@ except ImportError:
     print("Install it with: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
+from edream_batch import require_env
+
 script_file = Path(__file__).resolve()
 engines_dir = script_file.parent.parent
 
@@ -52,12 +54,8 @@ def main():
 
     config_name = "disco-style-transfer-config.json" if args.style_transfer else "disco-config.json"
 
-    backend_url = os.environ.get("BACKEND_URL", "https://api-stage.infinidream.ai/api/v1")
-    api_key = os.environ.get("API_KEY")
-
-    if not api_key:
-        print("Error: API_KEY not found in .env", file=sys.stderr)
-        sys.exit(1)
+    backend_url = require_env("BACKEND_URL")
+    api_key = require_env("API_KEY")
 
     client = create_edream_client(backend_url, api_key)
 

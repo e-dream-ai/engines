@@ -1,5 +1,5 @@
 {
-  "image_uuid": "e362ad15-5b50-40b7-8667-af5fcad5962d",
+  "image_uuid": "your-source-image-dream-uuid",
   "prompt": "Turn it into a watercolor painting with soft pastel colors.",
   "seed": -1,
   "output_folder": "generated-images",

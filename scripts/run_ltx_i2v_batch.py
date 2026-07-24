@@ -15,6 +15,8 @@ except ImportError:
     print("Install it with: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
+from edream_batch import require_env
+
 script_file = Path(__file__).resolve()
 engines_dir = script_file.parent.parent
 
@@ -94,12 +96,8 @@ def get_existing_dream_identifiers(playlist_uuid: str, client) -> Set[str]:
     return existing_identifiers
 
 def main():
-    backend_url = os.environ.get("BACKEND_URL", "https://api.infinidream.ai/api/v1")
-    api_key = os.environ.get("API_KEY")
-
-    if not api_key:
-        print("Error: API_KEY not found", file=sys.stderr)
-        sys.exit(1)
+    backend_url = require_env("BACKEND_URL")
+    api_key = require_env("API_KEY")
 
     client = create_edream_client(backend_url, api_key)
 
