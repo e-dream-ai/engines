@@ -15,7 +15,8 @@ except ImportError:
     print("Install it with: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
-from edream_batch import require_env
+sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
+from edream_batch import expand_env, require_env
 
 script_file = Path(__file__).resolve()
 engines_dir = script_file.parent.parent
@@ -29,7 +30,7 @@ def load_config(engines_dir: Path) -> Dict[str, Any]:
     if not config_file.exists():
         raise FileNotFoundError(f"ltx-i2v-config.json not found at {config_file}")
     with open(config_file, 'r') as f:
-        return json.load(f)
+        return expand_env(json.load(f))
 
 def get_images_from_playlist(client, playlist_uuid: str) -> List[Dict[str, str]]:
     images: List[Dict[str, str]] = []

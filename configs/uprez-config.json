@@ -1,5 +1,5 @@
 {
-  "playlist_uuid": "source-playlist-uuid",
+  "playlist_uuid": "${UPREZ_SOURCE_PLAYLIST_UUID}",
   "ccbyLicense": true,
   "output_playlist": {
     "name": "Uprezed Playlist 3",

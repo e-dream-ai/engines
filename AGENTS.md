@@ -13,8 +13,9 @@ Python batch processing scripts for AI generative models. Orchestrates GPU workl
 ## Project Structure
 
 ```
+utils/
+  edream_batch.py              # Shared batch plumbing (auth, config, polling, download)
 scripts/
-  edream_batch.py              # Shared batch plumbing for the fal scripts
   run_wan_i2v_batch.py         # Image-to-video batch (Wan algorithm)
   run_uprez_batch.py           # Video upscaling batch
   run_qwen_image_batch.py      # Image generation batch (Qwen)

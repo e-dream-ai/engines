@@ -15,6 +15,7 @@ except ImportError:
     print("Install it with: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
+sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
 from edream_batch import require_env
 
 script_file = Path(__file__).resolve()

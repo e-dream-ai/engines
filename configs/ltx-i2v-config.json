@@ -1,5 +1,5 @@
 {
-  "image_uuid": "your-source-image-dream-uuid",
+  "image_uuid": "${STILL_UUID}",
   "prompt": "A cinematic shot of mountains.",
   "duration": 5,
   "seed": -1,

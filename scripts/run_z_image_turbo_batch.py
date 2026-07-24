@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import Any
+
+sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
 
 from edream_batch import (
     bootstrap,

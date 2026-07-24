@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -20,6 +21,7 @@ except ImportError:
 
 ENGINES_DIR = Path(__file__).resolve().parent.parent
 IMAGE_URL_FIELDS = ("original_video", "video", "thumbnail")
+_ENV_REF = re.compile(r"\$\{(\w+)\}")
 
 Dream = dict[str, Any]
 
@@ -52,6 +54,17 @@ class BatchResult:
     timed_out: list[str] = field(default_factory=list)
 
 
+def expand_env(value: Any) -> Any:
+    """Recursively expand ${VAR} references in config values from the environment. """
+    if isinstance(value, str):
+        return _ENV_REF.sub(lambda m: require_env(m.group(1)), value)
+    if isinstance(value, dict):
+        return {k: expand_env(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [expand_env(item) for item in value]
+    return value
+
+
 def bootstrap(config_file: str) -> tuple[EdreamClient, dict[str, Any]]:
     load_dotenv(ENGINES_DIR / ".env")
     if not os.environ.get("API_KEY"):
@@ -69,7 +82,7 @@ def bootstrap(config_file: str) -> tuple[EdreamClient, dict[str, Any]]:
     print(f"Connected to {backend_url}")
 
     with open(config_path) as f:
-        return client, json.load(f)
+        return client, expand_env(json.load(f))
 
 
 def _image_url(dream: Dream) -> str | None:

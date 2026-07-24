@@ -13,10 +13,13 @@ This directory contains Python-based engines and batch processing scripts for th
     ```
 
 2.  **Environment Variables**:
-    Create a `.env` file in the `engines` directory (or use the one in the project root) with the following credentials:
+    Create a `.env` file in the `engines` directory (or use the one in the project root). `BACKEND_URL` and `API_KEY` are required (there is no default — the scripts exit if either is unset). Deployment-specific UUIDs used as test inputs also live here; configs reference them with `${VAR}` (e.g. `"image_uuid": "${STILL_UUID}"`).
     ```
     BACKEND_URL=https://api.infinidream.ai/api/v1
     API_KEY=your_api_key_here
+    STILL_UUID=an-image-dream-uuid          # source for i2i / i2v scripts
+    DREAM_UUID=a-video-dream-uuid            # source for video scripts
+    UPREZ_SOURCE_PLAYLIST_UUID=a-playlist-uuid
     ```
 
 ## Batch Processing Scripts
@@ -144,7 +147,7 @@ Single image:
 
 ```json
 {
-    "image_uuid": "your-dream-uuid",
+    "image_uuid": "${STILL_UUID}",
     "prompt": "A cinematic shot of...",
     "duration": 5,
     "seed": -1,
@@ -378,7 +381,7 @@ single `image_uuid` or an `image_playlist_uuid`.
 
 ```json
 {
-    "image_uuid": "your-source-image-dream-uuid",
+    "image_uuid": "${STILL_UUID}",
     "prompt": "Turn it into a watercolor painting with soft pastel colors.",
     "seed": -1,
     "output_folder": "generated-images",
@@ -404,7 +407,7 @@ are auto-uploaded to their dream, so nothing is downloaded locally.
 ```json
 {
     "model": "kling-i2v",
-    "image_uuid": "your-source-image-dream-uuid",
+    "image_uuid": "${STILL_UUID}",
     "prompt": "The scene comes alive with gentle, cinematic motion.",
     "duration": 5,
     "negative_prompt": "",
