@@ -1,0 +1,22 @@
+{
+  "batch_name": "VideoWarp",
+  "animation_mode": "Video Input",
+  "source_dream_uuid": "9952af83-c8e8-4812-b1c3-0e436129aa81",
+  "extract_nth_frame": 1,
+  "flow_warp": true,
+  "flow_blend": 0.5,
+  "width": 910,
+  "height": 512,
+  "steps": 50,
+  "clip_guidance_scale": 3000,
+  "cutn_batches": 1,
+  "clip_vit_b32": true,
+  "text_prompts": {
+    "0": ["Masonic Art Covered with hornwort and sparklers by johfra bosschart"]
+  },
+    
+  "playlist": {
+    "name": "Disco Diffusion Output",
+    "nsfw": false
+  }
+}

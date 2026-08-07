@@ -13,7 +13,7 @@ This directory contains Python-based engines and batch processing scripts for th
     ```
 
 2.  **Environment Variables**:
-    Create a `.env` file in the `engines` directory (or use the one in the project root). `BACKEND_URL` and `API_KEY` are required (there is no default — the scripts exit if either is unset). Deployment-specific UUIDs used as test inputs also live here; configs reference them with `${VAR}` (e.g. `"image_uuid": "${STILL_UUID}"`).
+    Create a `.env` file in the `engines` directory (or use the one in the project root). `BACKEND_URL` and `API_KEY` are required. Deployment-specific UUIDs used as test inputs also live here; configs reference them with `${VAR}` (e.g. `"image_uuid": "${STILL_UUID}"`). You can copy `.env.example` and replace the API_KEY.
     ```
     BACKEND_URL=https://api.infinidream.ai/api/v1
     API_KEY=your_api_key_here
@@ -28,13 +28,13 @@ These scripts are located in `engines/scripts/` and use the `edream_sdk` to inte
 
 ### 1. Wan Image-to-Video Batch (`run_wan_i2v_batch.py`)
 
-Generates videos from a playlist of image dreams using the Wan I2V algorithm with various prompt combinations.
+Generates videos from image dreams using the Wan I2V algorithm with various prompt combinations. Source images come from an `image_playlist_uuid` (typically the output playlist of `run_qwen_image_batch.py` or `run_z_image_turbo_batch.py`), or from a single `image_uuid`.
 
 **Configuration (`engines/configs/job.json`):**
 
 ```json
 {
-    "image_playlist_uuid": "source-image-playlist-uuid",
+    "image_playlist_uuid": "${STILL_PLAYLIST_UUID}",
     "prompt": "A cinematic shot of...",
     "combos": ["in a cyberpunk city", "underwater"],
     "playlist_uuid": "optional-existing-playlist-uuid",

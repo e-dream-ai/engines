@@ -1,306 +1,118 @@
-import json
-import os
-import sys
-import time
-import hashlib
-from pathlib import Path
-from typing import Dict, List, Any, Set
-from dotenv import load_dotenv
+from __future__ import annotations
 
-try:
-    from edream_sdk.client import create_edream_client
-    from edream_sdk.types.playlist_types import CreatePlaylistRequest, PlaylistItemType
-except ImportError:
-    print("Error: edream_sdk not installed", file=sys.stderr)
-    print("Install it with: pip install -r requirements.txt", file=sys.stderr)
-    sys.exit(1)
+import hashlib
+import sys
+from pathlib import Path
+from typing import Any
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
-from edream_batch import require_env
 
-script_file = Path(__file__).resolve()
-engines_dir = script_file.parent.parent
+from edream_batch import (
+    SourceImage,
+    bootstrap,
+    get_or_create_playlist,
+    poll_until_complete,
+    resolve_source_images,
+    submit_dream,
+)
 
-load_dotenv(engines_dir / ".env")
-if not os.environ.get("API_KEY"):
-     load_dotenv(engines_dir.parent / ".env")
+CONFIG_FILE = "job.json"
+PASS_THROUGH = (
+    "size",
+    "duration",
+    "num_inference_steps",
+    "guidance",
+    "seed",
+    "negative_prompt",
+    "flow_shift",
+    "enable_prompt_optimization",
+    "enable_safety_checker",
+)
 
-def load_job_config(engines_dir: Path) -> Dict[str, Any]:
-    job_file = engines_dir / "configs" / "job.json"
-    if not job_file.exists():
-        raise FileNotFoundError(f"job.json not found at {job_file}")
-    with open(job_file, 'r') as f:
-        return json.load(f)
 
-def get_images_from_playlist(client, playlist_uuid: str) -> List[Dict[str, str]]:
-    """Get image dreams from a playlist."""
-    images: List[Dict[str, str]] = []
-    take = 50
-    skip = 0
+def job_identifier(source: SourceImage, combo: str) -> str:
+    return f"{source.ref}:{hashlib.md5(combo.encode()).hexdigest()[:8]}"
 
-    while True:
-        response = client.get_playlist_items(playlist_uuid, take=take, skip=skip)
-        items = response.get("items", [])
 
-        for item in items:
-            if item.get("type") != "dream":
-                continue
-            dream = item.get("dreamItem") or {}
-
-            image_url = None
-            for field in ["original_video", "video", "thumbnail"]:
-                url = dream.get(field)
-                if isinstance(url, str) and url.startswith("http"):
-                    image_url = url
-                    break
-
-            if not image_url:
-                continue
-
-            images.append({
-                "uuid": dream.get("uuid", ""),
-                "name": dream.get("name") or dream.get("uuid") or "dream",
-                "url": image_url,
-            })
-
-        total_count = response.get("totalCount")
-        skip += take
-
-        if total_count is None or skip >= total_count:
-            break
-
-    if not images:
-        raise ValueError(f"No image dreams found in playlist: {playlist_uuid}")
-
-    return images
-
-def create_job_identifier(source_id: str, combo_prompt: str) -> str:
-    """Create a unique identifier for a source+combo combination."""
-    image_name = source_id
-    combo_hash = hashlib.md5(combo_prompt.encode()).hexdigest()[:8]
-    return f"{image_name}:{combo_hash}"
-
-def get_existing_dream_identifiers(playlist_uuid: str, client) -> Set[str]:
-    """Get set of existing dream identifiers from a playlist."""
-    existing_identifiers = set()
-    
+def existing_identifiers(client, playlist_uuid: str) -> set[str]:
+    """Identifiers of dreams already submitted into the output playlist."""
+    found: set[str] = set()
     try:
         playlist = client.get_playlist(playlist_uuid, auto_populate=True)
-        items = playlist.get("items", [])
-        
-        for item in items:
-            if item.get("type") == "dream" and item.get("dreamItem"):
-                dream = item["dreamItem"]
-                description = dream.get("description", "")
-                name = dream.get("name", "")
-                
-                text_to_check = f"{description} {name}"
-                if "BATCH_IDENTIFIER:" in text_to_check:
-                    parts = text_to_check.split("BATCH_IDENTIFIER:")
-                    if len(parts) > 1:
-                        identifier = parts[1].split()[0] if parts[1].split() else ""
-                        if identifier:
-                            existing_identifiers.add(identifier)
     except Exception as e:
-        print(f"Warning: Error getting existing dreams from playlist: {e}", file=sys.stderr)
-    
-    return existing_identifiers
+        print(f"Warning: cannot read existing playlist items: {e}", file=sys.stderr)
+        return found
 
-def main():
-    print(f"Script directory: {script_file.parent}")
-    
-    backend_url = require_env("BACKEND_URL")
-    api_key = require_env("API_KEY")
-
-    client = create_edream_client(backend_url, api_key)
-    print(f"Connected to {backend_url}")
-
-    print("\nLoading job.json...")
-    try:
-        job_config = load_job_config(engines_dir)
-        print(f"Loaded job.json")
-    except Exception as e:
-        print(f"Error loading job.json: {e}", file=sys.stderr)
-        sys.exit(1)
-    
-    image_playlist_uuid = job_config.get("image_playlist_uuid")
-    if not image_playlist_uuid:
-        print("'image_playlist_uuid' not found in job.json", file=sys.stderr)
-        sys.exit(1)
-    
-    print(f"\nFetching images from playlist: {image_playlist_uuid}")
-    try:
-        images = get_images_from_playlist(client, image_playlist_uuid)
-        print(f"Found {len(images)} image(s) in playlist")
-    except Exception as e:
-        print(f"Error getting images: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    combos = job_config.get("combos", [])
-    if not combos:
-        print("\nNo 'combos' found in job.json, using empty combo")
-        combos = [""]
-    
-    total_jobs = len(images) * len(combos)
-    
-    playlist_uuid = job_config.get("playlist_uuid")
-    playlist = None
-    existing_identifiers = set()
-
-    if playlist_uuid:
-        print(f"\nChecking existing playlist: {playlist_uuid}")
-        try:
-            playlist = client.get_playlist(playlist_uuid)
-            print(f"Found playlist: {playlist.get('name', 'Unnamed')}")
-            existing_identifiers = get_existing_dream_identifiers(playlist_uuid, client)
-            print(f"Found {len(existing_identifiers)} existing dream(s) in playlist")
-        except Exception as e:
-            print(f"Error accessing playlist: {e}")
-            playlist_uuid = None
-    
-    if not playlist_uuid:
-        playlist_config = job_config.get("playlist")
-        if not playlist_config:
-            print("Error: No playlist_uuid and no playlist config in job.json")
-            sys.exit(1)
-            
-        print(f"\nCreating new playlist: {playlist_config.get('name')}")
-        playlist_data: CreatePlaylistRequest = {
-            "name": playlist_config.get("name", "Batch Output"),
-            "description": playlist_config.get("description", ""),
-            "nsfw": playlist_config.get("nsfw", False)
-        }
-        playlist = client.create_playlist(playlist_data)
-        playlist_uuid = playlist['uuid']
-        print(f"Created playlist: {playlist_uuid}")
-
-    print(f"\nStarting batch processing ({total_jobs} total tasks)...")
-    
-    active_dreams = []
-
-    job_count = 0
-    skipped_count = 0
-    failed_count = 0
-    
-    for image_idx, image_data in enumerate(images, 1):
-        source_dream_uuid = image_data["url"]
-        source_id = image_data.get("uuid") or image_data.get("name")
-        
-        for combo in combos:
-            ident = create_job_identifier(source_id, combo)
-            if ident not in existing_identifiers:
-                break
-        else:
-            print(f"Skipping image {image_data['name']} (all combos exist)")
-            skipped_count += len(combos)
+    for item in playlist.get("items", []):
+        dream = item.get("dreamItem") if item.get("type") == "dream" else None
+        if not dream:
             continue
-        
-        if not source_dream_uuid:
-            print(f"Skipping image {image_data['name']} (missing URL)")
-            skipped_count += len(combos)
-            continue
+        text = f"{dream.get('description', '')} {dream.get('name', '')}"
+        _, marker, rest = text.partition("BATCH_IDENTIFIER:")
+        if marker and rest.split():
+            found.add(rest.split()[0])
+    return found
 
-        for combo in combos:
-            job_count += 1
-            combo_idx = combos.index(combo) + 1
-            identifier = create_job_identifier(source_id, combo)
-            
-            if identifier in existing_identifiers:
-                print(f"[{job_count}/{total_jobs}] Skipping existing: {identifier}")
-                skipped_count += 1
+
+def build_prompt(config: dict[str, Any], source: SourceImage, combo: str) -> dict[str, Any]:
+    prompt: dict[str, Any] = {
+        "infinidream_algorithm": "wan-i2v",
+        "prompt": f"{config.get('prompt', '')} {combo}".strip(),
+        "image": source.ref,
+    }
+    for key in PASS_THROUGH:
+        if key in config:
+            prompt[key] = config[key]
+    return prompt
+
+
+def main() -> None:
+    client, config = bootstrap(CONFIG_FILE)
+
+    try:
+        sources = resolve_source_images(client, config)
+    except ValueError as e:
+        print(f"Error resolving sources: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    combos = config.get("combos") or [""]
+    print(f"Resolved {len(sources)} source image(s) x {len(combos)} combo(s)")
+
+    playlist_uuid = get_or_create_playlist(client, config, "Wan I2V Batch")
+    already_done = existing_identifiers(client, playlist_uuid)
+    if already_done:
+        print(f"Resuming playlist {playlist_uuid} ({len(already_done)} existing)")
+
+    submitted: list[str] = []
+    skipped = 0
+
+    for source in sources:
+        for combo_idx, combo in enumerate(combos, 1):
+            identifier = job_identifier(source, combo)
+            if identifier in already_done:
+                skipped += 1
                 continue
-                
-            main_prompt = job_config.get("prompt", "")
-            combined_prompt = f"{main_prompt} {combo}".strip()
-            
-            print(f"[{job_count}/{total_jobs}] creating dream for {image_data['name']} + combo {combo_idx}")
-            
-            algo_params = {
-                "infinidream_algorithm": "wan-i2v",
-                "prompt": combined_prompt,
-                "image": source_dream_uuid,
-            }
-            
-            for param in ["size", "duration", "num_inference_steps", "guidance", "seed",
-                          "negative_prompt", "flow_shift", "enable_prompt_optimization", "enable_safety_checker"]:
-                if param in job_config:
-                    algo_params[param] = job_config[param]
 
-            try:
-                dream_name = f"{image_data['name']}_combo-{combo_idx}"
-                desc_identifier = f"BATCH_IDENTIFIER:{identifier}"
-                
-                new_dream = client.create_dream_from_prompt({
-                    "name": dream_name,
-                    "description": f"Batch generation. {desc_identifier}",
-                    "prompt": json.dumps(algo_params),
-                    "ccbyLicense": job_config.get("ccbyLicense", True)
-                })
-                
-                print(f"  -> Job started: {new_dream['uuid']}")
-                
-                try:
-                    client.add_item_to_playlist(
-                        playlist_uuid=playlist_uuid,
-                        type=PlaylistItemType.DREAM,
-                        item_uuid=new_dream['uuid']
-                    )
-                    print(f"  -> Added to playlist: {playlist_uuid}")
-                except Exception as e:
-                    print(f"  -> Failed to add to playlist {playlist_uuid}: {e}", file=sys.stderr)
-                
-                active_dreams.append(new_dream['uuid'])
-                
-            except Exception as e:
-                print(f"  -> Failed to start job: {e}")
-                failed_count += 1
+            uuid = submit_dream(
+                client,
+                name=f"{source.name}_combo-{combo_idx}",
+                description=f"Batch generation. BATCH_IDENTIFIER:{identifier}",
+                prompt=build_prompt(config, source, combo),
+                playlist_uuid=playlist_uuid,
+                ccby_license=config.get("ccbyLicense", True),
+            )
+            if uuid:
+                print(f"Submitted {source.name} combo {combo_idx}: {uuid}")
+                submitted.append(uuid)
 
-    print("\n" + "="*60)
-    print("Submission Complete")
-    print(f"Active jobs: {len(active_dreams)}")
-    print(f"Skipped: {skipped_count}")
-    print(f"Failed to start: {failed_count}")
-    print("="*60)
-    
-    if not active_dreams:
+    print(f"Submitted {len(submitted)}, skipped {skipped}")
+    if not submitted:
         return
 
-    print(f"\nPolling {len(active_dreams)} active jobs...")
-    pending = set(active_dreams)
-    
-    poll_interval = 10
-    start_time = time.time()
-    max_wait = 7200 # 2 hours
-    
-    while pending and (time.time() - start_time) < max_wait:
-        completed = set()
-        
-        for dream_uuid in pending:
-            try:
-                dream = client.get_dream(dream_uuid)
-                status = dream.get("status")
-                
-                if status == "processed":
-                    print(f"Job finished: {dream_uuid}")
-                    completed.add(dream_uuid)
-                elif status == "failed":
-                    print(f"Job failed: {dream_uuid} (Error: {dream.get('error')})")
-                    completed.add(dream_uuid)
-                    
-            except Exception as e:
-                print(f"Error checking status for {dream_uuid}: {e}")
-        
-        pending -= completed
-        
-        if pending:
-             time.sleep(poll_interval)
-             
-    if pending:
-        print(f"\nTimeout waiting for {len(pending)} jobs.")
-    else:
-        print("\nAll jobs accounted for.")
-        
-    print(f"\nBatch process finished. Playlist: {playlist_uuid}")
+    result = poll_until_complete(client, submitted, max_wait=7200)
+    print(f"Done. processed={len(result.processed)} failed={len(result.failed)} timed_out={len(result.timed_out)}")
+    print(f"Playlist: {playlist_uuid}")
+
 
 if __name__ == "__main__":
     main()
