@@ -5,7 +5,6 @@
   "duration": 3,
   "negative_prompt": "",
   "cfg_scale": 0.5,
-  "seed": -1,
   "ccbyLicense": true,
   "playlist": {
     "name": "Kling I2V Batch",

@@ -56,8 +56,11 @@ python3 scripts/run_kling_i2v_batch.py       # Kling image-to-video (fal)
 - Tracking/deduplication using markers (e.g., "uprez" marker for processed videos)
 - Uses edream_sdk for backend API interactions
 - Environment variables for API credentials
-- Guidance/CFG is per-model: `cfg_scale` 0-1 for kling, `guidance` 1-5 for ltx,
-  `guidance` 0-10 for wan. `GUIDANCE_RANGES` in `utils/edream_batch.py` is the single
-  source of truth and mirrors `backend/src/constants/models.constants.ts`; scripts call
-  `check_guidance()` to reject out-of-range values and `guidance_tag()` to stamp the
-  value into dream names and resume keys.
+- Guidance/CFG is per-model: `cfg_scale` 0-1 for kling, `guidance` 1-5 for ltx. Wan has
+  no guidance param — its API silently ignores it (verified byte-identical output
+  across the full range), so it's absent from `GUIDANCE_RANGES` and never sent.
+  Kling also has no `seed` param, so batch scripts don't pass it through for kling.
+  `GUIDANCE_RANGES` in `utils/edream_batch.py` is the single source of truth and
+  mirrors `backend/src/constants/models.constants.ts`; scripts call `check_guidance()`
+  to reject out-of-range values and `guidance_tag()` to stamp the value into dream
+  names and resume keys.

@@ -27,7 +27,6 @@ GUIDANCE_RANGES: dict[str, tuple[str, float, float]] = {
     "kling-i2v": ("cfg_scale", 0.0, 1.0),
     "kling-25-i2v": ("cfg_scale", 0.0, 1.0),
     "ltx-i2v": ("guidance", 1.0, 5.0),
-    "wan-i2v": ("guidance", 0.0, 10.0),
 }
 _GUIDANCE_PARAMS = ("guidance", "cfg_scale")
 

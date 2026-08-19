@@ -23,7 +23,6 @@ PASS_THROUGH = (
     "size",
     "duration",
     "num_inference_steps",
-    "guidance",
     "seed",
     "negative_prompt",
     "flow_shift",

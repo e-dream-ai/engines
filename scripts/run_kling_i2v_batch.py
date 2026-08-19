@@ -19,7 +19,7 @@ from edream_batch import (
 
 CONFIG_FILE = "kling-i2v-config.json"
 SUPPORTED_MODELS = ("kling-i2v", "kling-25-i2v")
-PASS_THROUGH = ("duration", "negative_prompt", "cfg_scale", "seed")
+PASS_THROUGH = ("duration", "negative_prompt", "cfg_scale")
 
 
 def build_prompt(config: dict[str, Any], model: str, source: SourceImage) -> dict[str, Any]:
