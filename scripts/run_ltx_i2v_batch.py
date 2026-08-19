@@ -16,7 +16,7 @@ except ImportError:
     sys.exit(1)
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
-from edream_batch import expand_env, require_env
+from edream_batch import check_guidance, expand_env, guidance_tag, require_env
 
 script_file = Path(__file__).resolve()
 engines_dir = script_file.parent.parent
@@ -73,8 +73,8 @@ def get_images_from_playlist(client, playlist_uuid: str) -> List[Dict[str, str]]
 
     return images
 
-def create_job_identifier(source_id: str, combo_prompt: str) -> str:
-    combo_hash = hashlib.md5(combo_prompt.encode()).hexdigest()[:8]
+def create_job_identifier(source_id: str, combo_prompt: str, tag: str) -> str:
+    combo_hash = hashlib.md5(f"{combo_prompt}|{tag}".encode()).hexdigest()[:8]
     return f"{source_id}:{combo_hash}"
 
 def get_existing_dream_identifiers(playlist_uuid: str, client) -> Set[str]:
@@ -134,6 +134,10 @@ def main():
         print("Either 'image_uuid' or 'image_playlist_uuid' must be set in ltx-i2v-config.json", file=sys.stderr)
         sys.exit(1)
 
+    check_guidance(config, "ltx-i2v")
+    tag = guidance_tag(config, "ltx-i2v")
+    suffix = f" [{tag}]" if tag else ""
+
     combos = config.get("combos", []) or [""]
     total_jobs = len(images) * len(combos)
 
@@ -175,7 +179,7 @@ def main():
         source_id = image_data.get("uuid") or image_data.get("name")
 
         for combo in combos:
-            ident = create_job_identifier(source_id, combo)
+            ident = create_job_identifier(source_id, combo, tag)
             if ident not in existing_identifiers:
                 break
         else:
@@ -189,7 +193,7 @@ def main():
         for combo in combos:
             job_count += 1
             combo_idx = combos.index(combo) + 1
-            identifier = create_job_identifier(source_id, combo)
+            identifier = create_job_identifier(source_id, combo, tag)
 
             if identifier in existing_identifiers:
                 skipped_count += 1
@@ -206,13 +210,13 @@ def main():
                 "source_dream_uuid": source_dream_uuid,
             }
 
-            for param in ["duration", "seed", "negative_prompt", "lora", "lora_strength"]:
+            for param in ["duration", "seed", "negative_prompt", "guidance", "lora", "lora_strength"]:
                 if param in config:
                     algo_params[param] = config[param]
 
             try:
                 new_dream = client.create_dream_from_prompt({
-                    "name": f"{image_data['name']}_combo-{combo_idx}",
+                    "name": f"{image_data['name']}_combo-{combo_idx}{suffix}",
                     "description": f"Batch generation. BATCH_IDENTIFIER:{identifier}",
                     "prompt": json.dumps(algo_params),
                     "ccbyLicense": config.get("ccbyLicense", True)

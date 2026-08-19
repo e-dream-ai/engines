@@ -10,6 +10,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
 from edream_batch import (
     SourceImage,
     bootstrap,
+    check_guidance,
+    guidance_tag,
     get_or_create_playlist,
     poll_until_complete,
     resolve_source_images,
@@ -30,8 +32,9 @@ PASS_THROUGH = (
 )
 
 
-def job_identifier(source: SourceImage, combo: str) -> str:
-    return f"{source.ref}:{hashlib.md5(combo.encode()).hexdigest()[:8]}"
+def job_identifier(source: SourceImage, combo: str, tag: str) -> str:
+    digest = hashlib.md5(f"{combo}|{tag}".encode()).hexdigest()[:8]
+    return f"{source.ref}:{digest}"
 
 
 def existing_identifiers(client, playlist_uuid: str) -> set[str]:
@@ -75,8 +78,12 @@ def main() -> None:
         print(f"Error resolving sources: {e}", file=sys.stderr)
         sys.exit(1)
 
+    check_guidance(config, "wan-i2v")
+    tag = guidance_tag(config, "wan-i2v")
+    suffix = f" [{tag}]" if tag else ""
+
     combos = config.get("combos") or [""]
-    print(f"Resolved {len(sources)} source image(s) x {len(combos)} combo(s)")
+    print(f"Resolved {len(sources)} source image(s) x {len(combos)} combo(s){suffix}")
 
     playlist_uuid = get_or_create_playlist(client, config, "Wan I2V Batch")
     already_done = existing_identifiers(client, playlist_uuid)
@@ -88,14 +95,14 @@ def main() -> None:
 
     for source in sources:
         for combo_idx, combo in enumerate(combos, 1):
-            identifier = job_identifier(source, combo)
+            identifier = job_identifier(source, combo, tag)
             if identifier in already_done:
                 skipped += 1
                 continue
 
             uuid = submit_dream(
                 client,
-                name=f"{source.name}_combo-{combo_idx}",
+                name=f"{source.name}_combo-{combo_idx}{suffix}",
                 description=f"Batch generation. BATCH_IDENTIFIER:{identifier}",
                 prompt=build_prompt(config, source, combo),
                 playlist_uuid=playlist_uuid,

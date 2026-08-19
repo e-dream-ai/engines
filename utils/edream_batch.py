@@ -23,6 +23,14 @@ ENGINES_DIR = Path(__file__).resolve().parent.parent
 IMAGE_URL_FIELDS = ("original_video", "video", "thumbnail")
 _ENV_REF = re.compile(r"\$\{(\w+)\}")
 
+GUIDANCE_RANGES: dict[str, tuple[str, float, float]] = {
+    "kling-i2v": ("cfg_scale", 0.0, 1.0),
+    "kling-25-i2v": ("cfg_scale", 0.0, 1.0),
+    "ltx-i2v": ("guidance", 1.0, 5.0),
+    "wan-i2v": ("guidance", 0.0, 10.0),
+}
+_GUIDANCE_PARAMS = ("guidance", "cfg_scale")
+
 Dream = dict[str, Any]
 
 
@@ -63,6 +71,37 @@ def expand_env(value: Any) -> Any:
     if isinstance(value, list):
         return [expand_env(item) for item in value]
     return value
+
+
+def guidance_of(config: dict[str, Any], model: str) -> tuple[str, float] | None:
+    spec = GUIDANCE_RANGES.get(model)
+    if spec is None:
+        return None
+    value = config.get(spec[0])
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return spec[0], float(value)
+
+
+def check_guidance(config: dict[str, Any], model: str) -> None:
+    spec = GUIDANCE_RANGES.get(model)
+    if spec is None:
+        return
+    param, low, high = spec
+
+    for other in _GUIDANCE_PARAMS:
+        if other != param and other in config:
+            print(f"Warning: '{other}' is ignored by {model}, which uses '{param}' ({low}-{high})", file=sys.stderr)
+
+    current = guidance_of(config, model)
+    if current is not None and not low <= current[1] <= high:
+        print(f"Error: '{param}' for {model} must be {low}-{high}, got {current[1]}", file=sys.stderr)
+        sys.exit(1)
+
+
+def guidance_tag(config: dict[str, Any], model: str) -> str:
+    current = guidance_of(config, model)
+    return f"{current[0]}={current[1]:g}" if current else ""
 
 
 def bootstrap(config_file: str) -> tuple[EdreamClient, dict[str, Any]]:

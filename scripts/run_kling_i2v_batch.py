@@ -9,6 +9,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1] / "utils"))
 from edream_batch import (
     SourceImage,
     bootstrap,
+    check_guidance,
+    guidance_tag,
     get_or_create_playlist,
     poll_until_complete,
     resolve_source_images,
@@ -50,14 +52,18 @@ def main() -> None:
         sys.exit(1)
     print(f"Resolved {len(sources)} source image(s) for {model}")
 
+    check_guidance(config, model)
+    tag = guidance_tag(config, model)
+    suffix = f" [{tag}]" if tag else ""
+
     playlist_uuid = get_or_create_playlist(client, config, "Kling I2V Batch")
 
     submitted: list[str] = []
     for source in sources:
         uuid = submit_dream(
             client,
-            name=f"Kling {source.name}",
-            description=f"Image-to-video from {source.name}",
+            name=f"Kling {source.name}{suffix}",
+            description=f"Image-to-video from {source.name}{suffix}",
             prompt=build_prompt(config, model, source),
             playlist_uuid=playlist_uuid,
             ccby_license=config.get("ccbyLicense", True),

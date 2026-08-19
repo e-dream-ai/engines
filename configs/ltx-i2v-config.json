@@ -2,6 +2,7 @@
   "image_uuid": "${STILL_UUID}",
   "prompt": "A cinematic shot of mountains.",
   "duration": 5,
+  "guidance": 1,
   "seed": -1,
   "lora": "ltx-2-19b-lora-camera-control-static.safetensors",
   "lora_strength": 0.4,

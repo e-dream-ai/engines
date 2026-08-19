@@ -32,6 +32,7 @@ configs/
   flux-schnell-config.json     # FLUX schnell config
   flux-kontext-i2i-config.json # FLUX Kontext i2i config
   kling-i2v-config.json        # Kling i2v config
+  ltx-i2v-config.json          # LTX i2v config
 src/edream-sdk/                # SDK submodule
 ```
 
@@ -55,3 +56,8 @@ python3 scripts/run_kling_i2v_batch.py       # Kling image-to-video (fal)
 - Tracking/deduplication using markers (e.g., "uprez" marker for processed videos)
 - Uses edream_sdk for backend API interactions
 - Environment variables for API credentials
+- Guidance/CFG is per-model: `cfg_scale` 0-1 for kling, `guidance` 1-5 for ltx,
+  `guidance` 0-10 for wan. `GUIDANCE_RANGES` in `utils/edream_batch.py` is the single
+  source of truth and mirrors `backend/src/constants/models.constants.ts`; scripts call
+  `check_guidance()` to reject out-of-range values and `guidance_tag()` to stamp the
+  value into dream names and resume keys.

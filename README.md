@@ -22,6 +22,22 @@ This directory contains Python-based engines and batch processing scripts for th
     UPREZ_SOURCE_PLAYLIST_UUID=a-playlist-uuid
     ```
 
+## Guidance / CFG
+
+Each model family names this knob differently and accepts a different range:
+
+| Model | Param | Range | Low / Mid / High |
+| --- | --- | --- | --- |
+| `kling-i2v`, `kling-25-i2v` | `cfg_scale` | 0–1 | 0 / 0.5 / 1 |
+| `ltx-i2v` | `guidance` | 1–5 | 1 / 3 / 5 |
+| `wan-i2v` | `guidance` | 0–10 | 0 / 5 / 10 |
+
+The scripts reject an out-of-range value rather than letting the worker clamp it,
+and warn if the config uses the other model's param name. The configured value is
+stamped into each dream's name (e.g. `[cfg_scale=0.5]`) so results from several
+runs into one playlist stay identifiable, and it is part of the resume key so
+re-running the same prompt at a different value is not skipped as already-done.
+
 ## Batch Processing Scripts
 
 These scripts are located in `engines/scripts/` and use the `edream_sdk` to interact with the API directly.
@@ -45,9 +61,12 @@ Generates videos from image dreams using the Wan I2V algorithm with various prom
     },
     "size": "1280x720",
     "duration": 5,
-    "num_inference_steps": 30
+    "num_inference_steps": 30,
+    "guidance": 5
 }
 ```
+
+Guidance is `guidance`, range **0–10** (default 5).
 
 **Usage:**
 
@@ -150,6 +169,7 @@ Single image:
     "image_uuid": "${STILL_UUID}",
     "prompt": "A cinematic shot of...",
     "duration": 5,
+    "guidance": 1,
     "seed": -1,
     "playlist": { "name": "LTX I2V Output", "nsfw": false }
 }
@@ -170,6 +190,9 @@ Batch from playlist:
     "lora_strength": 0.4
 }
 ```
+
+Guidance is `guidance`, range **1–5** (default 1). LTX uses a distilled few-step
+sampler tuned near 1.0, so higher values change the image far less than on Wan.
 
 **Usage:**
 
@@ -418,6 +441,9 @@ are auto-uploaded to their dream, so nothing is downloaded locally.
 
 Durations: `kling-i2v` allows 3–15s; `kling-25-i2v` allows 5s or 10s. Optionally
 set `end_source_uuid` for an end frame.
+
+Guidance is `cfg_scale`, range **0–1** (default 0.5). Kling does not accept a
+`guidance` key — setting one is ignored, and the scripts warn when they see it.
 
 **Usage:**
 
