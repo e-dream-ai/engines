@@ -19,7 +19,6 @@ This directory contains Python-based engines and batch processing scripts for th
     API_KEY=your_api_key_here
     STILL_UUID=an-image-dream-uuid          # source for i2i / i2v scripts
     DREAM_UUID=a-video-dream-uuid            # source for video scripts
-    UPREZ_SOURCE_PLAYLIST_UUID=a-playlist-uuid
     ```
 
 ## Guidance / CFG
@@ -74,34 +73,22 @@ Guidance is `guidance`, range **0–10** (default 5).
 python3 scripts/run_wan_i2v_batch.py
 ```
 
-### 2. Uprez Batch (`run_uprez_batch.py`)
+### 2. Uprez Batch — removed
 
-Upscales video dreams from a source playlist and adds them to an output playlist. It tracks processed videos to avoid duplication.
+`run_uprez_batch.py` has been removed. It predated the backend's native
+`uprez_playlist` algorithm and hand-built the derived dreams, which produced a
+playlist that could not be re-run, could not requeue failed dreams, could not be
+cancelled as a unit, and had no keyframes. It also appended a tracking marker to
+each *source* dream's description, corrupting descriptions that carry real
+metadata.
 
-**Configuration (`engines/configs/uprez-config.json`):**
-
-```json
-{
-    "playlist_uuid": "source-playlist-uuid",
-    "tracking": {
-        "marker": "uprez",
-        "existing_playlist_uuid": "optional-output-playlist-uuid"
-    },
-    "output_playlist": {
-        "name": "Uprezed Videos",
-        "description": "Upscaled versions"
-    },
-    "uprez_config": {
-        "upscale_factor": 2,
-        "quality": "high"
-    }
-}
-```
-
-**Usage:**
+Use `python-api/scripts/uprez_playlist.py` instead. It creates a derived playlist
+whose own prompt names the source, and lets the backend materialize and link the
+dreams:
 
 ```bash
-python3 scripts/run_uprez_batch.py
+python scripts/uprez_playlist.py <source_playlist_uuid> \
+    --upscale-factor 2 --interpolation-factor 2
 ```
 
 ### 3. Qwen Image Batch (`run_qwen_image_batch.py`)

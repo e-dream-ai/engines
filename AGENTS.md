@@ -17,7 +17,6 @@ utils/
   edream_batch.py              # Shared batch plumbing (auth, config, polling, download)
 scripts/
   run_wan_i2v_batch.py         # Image-to-video batch (Wan algorithm)
-  run_uprez_batch.py           # Video upscaling batch
   run_qwen_image_batch.py      # Image generation batch (Qwen)
   run_z_image_turbo_batch.py   # Fast image generation (Z-Image Turbo)
   run_flux_schnell_batch.py    # Text-to-image (FLUX.1 [schnell], fal)
@@ -26,7 +25,6 @@ scripts/
   images/                      # Sample image assets
 configs/
   job.json                     # Wan I2V config template
-  uprez-config.json            # Uprez config
   qwen-image-config.json       # Qwen config
   z-image-turbo-config.json    # Z-Image Turbo config
   flux-schnell-config.json     # FLUX schnell config
@@ -41,7 +39,6 @@ src/edream-sdk/                # SDK submodule
 ```bash
 pip install -r requirements.txt
 python3 scripts/run_wan_i2v_batch.py         # Image-to-video batch
-python3 scripts/run_uprez_batch.py           # Video upscaling batch
 python3 scripts/run_qwen_image_batch.py      # Qwen image batch
 python3 scripts/run_z_image_turbo_batch.py   # Z-Image Turbo batch
 python3 scripts/run_flux_schnell_batch.py    # FLUX schnell text-to-image (fal)
