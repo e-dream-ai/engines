@@ -268,43 +268,20 @@ python3 scripts/run_disco_batch.py
 
 ---
 
-### 6. Nvidia VSR Batch (`run_nvidia_vsr_batch.py`)
+### 6. Nvidia VSR Batch — removed
 
-Upscales video dreams using Nvidia RTX Video Super Resolution. Tracks processed videos to avoid duplication.
+`run_nvidia_vsr_batch.py` has been removed for the same reason as
+`run_uprez_batch.py` above: it hand-built the derived dreams, so the playlists
+it produced had no `source_dream_uuid` linking them to their sources and could
+not be re-run, requeued, cancelled as a unit, or played continuously.
 
-**Configuration (`engines/configs/nvidia-vsr-config.json`):**
-
-Single video:
-
-```json
-{
-    "video_uuid": "your-dream-uuid",
-    "output_playlist": { "name": "Nvidia VSR Output", "nsfw": false },
-    "vsr_config": { "upscale_factor": 2, "quality": "ULTRA" },
-    "tracking": { "marker": "nvidia-vsr" }
-}
-```
-
-Batch from playlist:
-
-```json
-{
-    "playlist_uuid": "source-playlist-uuid",
-    "output_playlist": { "name": "Nvidia VSR Output", "nsfw": false },
-    "vsr_config": { "upscale_factor": 2, "quality": "ULTRA" },
-    "tracking": {
-        "marker": "nvidia-vsr",
-        "existing_playlist_uuid": "optional-output-playlist-uuid"
-    }
-}
-```
-
-Valid `quality` options: `LOW`, `MEDIUM`, `HIGH`, `ULTRA`
-
-**Usage:**
+Use `python-api/scripts/uprez_playlist.py` with the VSR algorithm. RTX VSR is
+resolution-only, so it takes no interpolation factor and its quality is the
+NVIDIA enum (LOW/MEDIUM/HIGH/ULTRA), not the x264 preset:
 
 ```bash
-python3 scripts/run_nvidia_vsr_batch.py
+python scripts/uprez_playlist.py <source_playlist_uuid> \
+    --dream-algorithm nvidia-uprez --upscale-factor 2 --quality ULTRA
 ```
 
 ### 6. Z-Image Turbo Batch (`run_z_image_turbo_batch.py`)
