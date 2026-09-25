@@ -25,11 +25,11 @@ This directory contains Python-based engines and batch processing scripts for th
 
 Each model family names this knob differently and accepts a different range:
 
-| Model | Param | Range | Low / Mid / High |
-| --- | --- | --- | --- |
-| `kling-i2v`, `kling-25-i2v` | `cfg_scale` | 0–1 | 0 / 0.5 / 1 |
-| `ltx-i2v` | `guidance` | 1–5 | 1 / 3 / 5 |
-| `wan-i2v` | `guidance` | 0–10 | 0 / 5 / 10 |
+| Model                       | Param       | Range | Low / Mid / High |
+| --------------------------- | ----------- | ----- | ---------------- |
+| `kling-i2v`, `kling-25-i2v` | `cfg_scale` | 0–1   | 0 / 0.5 / 1      |
+| `ltx-i2v`                   | `guidance`  | 1–5   | 1 / 3 / 5        |
+| `wan-i2v`                   | `guidance`  | 0–10  | 0 / 5 / 10       |
 
 The scripts reject an out-of-range value rather than letting the worker clamp it,
 and warn if the config uses the other model's param name. The configured value is
@@ -79,7 +79,7 @@ python3 scripts/run_wan_i2v_batch.py
 `uprez_playlist` algorithm and hand-built the derived dreams, which produced a
 playlist that could not be re-run, could not requeue failed dreams, could not be
 cancelled as a unit, and had no keyframes. It also appended a tracking marker to
-each *source* dream's description, corrupting descriptions that carry real
+each _source_ dream's description, corrupting descriptions that carry real
 metadata.
 
 Use `python-api/scripts/uprez_playlist.py` instead. It creates a derived playlist
@@ -414,3 +414,35 @@ Guidance is `cfg_scale`, range **0–1** (default 0.5). Kling does not accept a
 ```bash
 python3 scripts/run_kling_i2v_batch.py
 ```
+
+### 10. Krea 2 Turbo Batch (`run_krea_2_turbo_batch.py`)
+
+Text-to-image generation. Edit `configs/krea-2-turbo-config.json`,
+then run from the `engines/` directory:
+
+```bash
+python3 scripts/run_krea_2_turbo_batch.py
+```
+
+Set `prompt`, `num_generations`, `size`, and optionally `seed`. The configured
+seed is used for the first generation; subsequent generations use random seeds,
+matching the FLUX Schnell batch workflow. Omit `seed` or set it to `-1` for random
+generation. Results are added to the configured playlist and downloaded locally.
+
+### 11. Krea 2 Turbo Style Batch (`run_krea_2_turbo_style_batch.py`)
+
+Generates new images guided by a prompt and a style reference. Edit
+`configs/krea-2-turbo-style-config.json`, then run:
+
+```bash
+python3 scripts/run_krea_2_turbo_style_batch.py
+```
+
+Set `image_uuid` to a source dream, or replace it with `image_playlist_uuid` to
+generate one image per reference in that playlist. The sample config uses
+`${STILL_UUID}` from your environment. Each job sends one reference as
+`source_dream_uuid`; the worker resolves it for fal. A configured seed is reused
+for each reference. Results are added to the output playlist and downloaded.
+
+Both Krea models support `size`: `1024*768`, `1024*1024`, `768*1024`, `1280*720`,
+or `720*1280`.

@@ -21,6 +21,8 @@ scripts/
   run_z_image_turbo_batch.py   # Fast image generation (Z-Image Turbo)
   run_flux_schnell_batch.py    # Text-to-image (FLUX.1 [schnell], fal)
   run_flux_kontext_i2i_batch.py # Image-to-image (FLUX.1 Kontext, fal)
+  run_krea_2_turbo_batch.py     # Text-to-image (Krea 2 Turbo, fal)
+  run_krea_2_turbo_style_batch.py # Style-guided image generation (Krea 2 Turbo, fal)
   run_kling_i2v_batch.py       # Image-to-video (Kling 3.0 / 2.5 Turbo, fal)
   images/                      # Sample image assets
 configs/
@@ -29,6 +31,8 @@ configs/
   z-image-turbo-config.json    # Z-Image Turbo config
   flux-schnell-config.json     # FLUX schnell config
   flux-kontext-i2i-config.json # FLUX Kontext i2i config
+  krea-2-turbo-config.json     # Krea 2 Turbo config
+  krea-2-turbo-style-config.json # Krea 2 Turbo style reference config
   kling-i2v-config.json        # Kling i2v config
   ltx-i2v-config.json          # LTX i2v config
 src/edream-sdk/                # SDK submodule
@@ -43,6 +47,8 @@ python3 scripts/run_qwen_image_batch.py      # Qwen image batch
 python3 scripts/run_z_image_turbo_batch.py   # Z-Image Turbo batch
 python3 scripts/run_flux_schnell_batch.py    # FLUX schnell text-to-image (fal)
 python3 scripts/run_flux_kontext_i2i_batch.py # FLUX Kontext image-to-image (fal)
+python3 scripts/run_krea_2_turbo_batch.py     # Krea 2 Turbo text-to-image (fal)
+python3 scripts/run_krea_2_turbo_style_batch.py # Krea 2 Turbo style-guided images (fal)
 python3 scripts/run_kling_i2v_batch.py       # Kling image-to-video (fal)
 ```
 

@@ -1,0 +1,14 @@
+{
+  "num_generations": 1,
+  "prompt": "A vintage travel poster for Mars, warm colors and bold shapes.",
+  "size": "1280*720",
+  "seed": -1,
+  "output_folder": "generated-images",
+  "output_filename": "krea-2-turbo",
+  "ccbyLicense": true,
+  "playlist": {
+    "name": "Krea 2 Turbo Batch",
+    "description": "Generated with Krea 2",
+    "nsfw": false
+  }
+}
