@@ -1,10 +1,10 @@
 """Render a style-preset playlist: one dream per style, same subject and seed.
 
 Each style in the styles file (a JSON list of {"name", "prompt", "section"}) is
-rendered with the configured text-to-image algorithm. ``style_template`` gives
-the style's own text and ``prompt_template`` adds the example subject, so the
-style is the only variable. Each dream is named for its style, and its prompt
-JSON carries ``style_prompt`` (the style text alone, what "apply style"
+rendered with the configured text-to-image algorithm. ``prompt_template``
+combines the style with the example subject, so the style is the only variable.
+Each dream is named for its style, and its prompt JSON carries ``style_prompt``
+(the style's prompt from the styles file, verbatim: what "apply style"
 inserts) and ``section`` (for search) next to the recipe. The example subject is
 stored on the playlist as ``{"subject": ...}``.
 
@@ -64,7 +64,8 @@ class Style:
     key: str  # unique name from the styles file, e.g. "Film Noir (2)"
     name: str  # display name, duplicate suffix stripped
     section: str
-    prose: str
+    prose: str  # the style's prompt, trailing period stripped for the template
+    text: str  # the style's prompt verbatim
 
 
 def load_styles(source: str) -> list[Style]:
@@ -75,7 +76,8 @@ def load_styles(source: str) -> list[Style]:
         path = Path(source)
         raw = json.loads((path if path.is_absolute() else ENGINES_DIR / path).read_text())
     return [
-        Style(s["name"], _DUP_SUFFIX.sub("", s["name"]), s.get("section", ""), s["prompt"].rstrip().rstrip("."))
+        Style(s["name"], _DUP_SUFFIX.sub("", s["name"]), s.get("section", ""),
+              s["prompt"].rstrip().rstrip("."), s["prompt"])
         for s in raw
     ]
 
@@ -85,11 +87,10 @@ RENDER_FIELDS = ("infinidream_algorithm", "prompt", "size")
 
 
 def build_recipe(config: dict[str, Any], style: Style, seed: Any = None) -> dict[str, Any]:
-    style_prompt = config["style_template"].format(name=style.name, prose=style.prose)
     recipe: dict[str, Any] = {
         "infinidream_algorithm": config["algorithm"],
-        "prompt": config["prompt_template"].format(style_prompt=style_prompt, subject=config["subject"]),
-        "style_prompt": style_prompt,
+        "prompt": config["prompt_template"].format(name=style.name, prose=style.prose, subject=config["subject"]),
+        "style_prompt": style.text,
         "section": style.section,
     }
     if config.get("size"):
