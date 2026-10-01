@@ -1,10 +1,12 @@
 """Render a style-preset playlist: one dream per style, same subject and seed.
 
 Each style in the styles file (a JSON list of {"name", "prompt", "section"}) is
-rendered with the configured text-to-image algorithm. The prompt is built from
-``prompt_template`` so the style is the only variable. Each dream is named for
-its style and described with its section, and the example subject is stored on
-the playlist as ``{"subject": ...}`` so callers can swap it for their own.
+rendered with the configured text-to-image algorithm. ``style_template`` gives
+the style's own text and ``prompt_template`` adds the example subject, so the
+style is the only variable. Each dream is named for its style, and its prompt
+JSON carries ``style_prompt`` (the style text alone, what "apply style"
+inserts) and ``section`` (for search) next to the recipe. The example subject is
+stored on the playlist as ``{"subject": ...}``.
 
 With no playlist, every style is rendered into a new playlist. Given a playlist
 (``--playlist`` or ``playlist_uuid`` in the config), it is brought up to date:
@@ -12,7 +14,8 @@ With no playlist, every style is rendered into a new playlist. Given a playlist
 - styles new to the playlist are rendered and added;
 - items whose recipe no longer matches (subject, prose, algorithm, size) are
   re-rendered, and the new dream takes the old one's place;
-- names and descriptions are synced, and items are put in styles-file order.
+- names, ``style_prompt`` and ``section`` are synced in place (no re-render),
+  descriptions are cleared, and items are put in styles-file order.
 
 Curation done in the app is respected, using state kept in the playlist's
 ``prompt`` field: ``{"subject", "known", "exclude"}``. ``known`` lists the
@@ -30,6 +33,7 @@ Usage:
     python3 scripts/run_style_preset_playlist.py --env stage --dry-run
     python3 scripts/run_style_preset_playlist.py --env stage --sample 10
     python3 scripts/run_style_preset_playlist.py --env stage --playlist UUID
+    python3 scripts/run_style_preset_playlist.py --env stage --playlist UUID --no-render
 """
 
 from __future__ import annotations
@@ -76,9 +80,18 @@ def load_styles(source: str) -> list[Style]:
     ]
 
 
+# Fields that change the rendered image; the rest of the recipe is metadata.
+RENDER_FIELDS = ("infinidream_algorithm", "prompt", "size")
+
+
 def build_recipe(config: dict[str, Any], style: Style, seed: Any = None) -> dict[str, Any]:
-    prompt = config["prompt_template"].format(name=style.name, prose=style.prose, subject=config["subject"])
-    recipe: dict[str, Any] = {"infinidream_algorithm": config["algorithm"], "prompt": prompt}
+    style_prompt = config["style_template"].format(name=style.name, prose=style.prose)
+    recipe: dict[str, Any] = {
+        "infinidream_algorithm": config["algorithm"],
+        "prompt": config["prompt_template"].format(style_prompt=style_prompt, subject=config["subject"]),
+        "style_prompt": style_prompt,
+        "section": style.section,
+    }
     if config.get("size"):
         recipe["size"] = config["size"]
     seed = config.get("seed") if seed is None else seed
@@ -88,7 +101,25 @@ def build_recipe(config: dict[str, Any], style: Style, seed: Any = None) -> dict
 
 
 def is_current(recipe: dict[str, Any], config: dict[str, Any], style: Style) -> bool:
-    return recipe == build_recipe(config, style, seed=recipe.get("seed"))
+    """Whether the item's image still matches; the seed is ignored so re-rolls survive."""
+    want = build_recipe(config, style)
+    return all(recipe.get(f) == want.get(f) for f in RENDER_FIELDS)
+
+
+def metadata_update(dream: dict[str, Any], config: dict[str, Any], style: Style) -> dict[str, Any] | None:
+    """The update_dream body that syncs a current item's name, description and
+    prompt metadata, or None if it is already in sync."""
+    recipe = parse_recipe(dream)
+    want = {**build_recipe(config, style, seed=recipe.get("seed")),
+            **{k: v for k, v in recipe.items() if k not in RENDER_FIELDS + ("style_prompt", "section", "seed")}}
+    update: dict[str, Any] = {}
+    if dream.get("name") != style.name:
+        update["name"] = style.name
+    if dream.get("description"):
+        update["description"] = ""
+    if json.dumps(recipe) != json.dumps(want):
+        update["prompt"] = json.dumps(want)
+    return update or None
 
 
 def parse_recipe(dream: dict[str, Any]) -> dict[str, Any]:
@@ -134,7 +165,7 @@ def render(client: Any, config: dict[str, Any], styles: list[Style], batch_size:
             try:
                 dream = client.create_dream_from_prompt({
                     "name": style.name,
-                    "description": style.section,
+                    "description": "",
                     "prompt": json.dumps(build_recipe(config, style)),
                     "ccbyLicense": config.get("ccbyLicense", True),
                 })
@@ -166,6 +197,8 @@ def main() -> None:
     parser.add_argument("--exclude-missing", action="store_true",
                         help="mark every wanted style missing from the playlist as removed by hand")
     parser.add_argument("--prune", action="store_true", help="remove items whose style is gone from the styles file")
+    parser.add_argument("--no-render", action="store_true",
+                        help="only sync metadata, names and order; submit no jobs")
     parser.add_argument("--batch-size", type=int, default=50)
     parser.add_argument("--dry-run", action="store_true", help="report what would change, write nothing")
     args = parser.parse_args()
@@ -209,7 +242,7 @@ def main() -> None:
     wanted = [s for s in styles if s.key not in excluded]
     order = {s.key: i for i, s in enumerate(wanted)}
 
-    todo = [s for s in wanted if s.key not in current]
+    todo = [] if args.no_render else [s for s in wanted if s.key not in current]
     if args.sample is not None:
         todo = random.Random(args.rng_seed).sample(todo, min(args.sample, len(todo)))
         todo.sort(key=lambda s: order[s.key])
@@ -225,6 +258,11 @@ def main() -> None:
     for item in orphans:
         label = (item.get("dreamItem") or item.get("playlistItem") or {}).get("name")
         print(f"  {'Will remove' if args.prune else 'Keeping'} unmatched item {item['id']}: {label}")
+
+    by_key = {s.key: s for s in styles}
+    patches = {item["dreamItem"]["uuid"]: u for key, item in current.items()
+               if (u := metadata_update(item["dreamItem"], config, by_key[key]))}
+    print(f"To update in place: {len(patches)} dreams")
 
     if args.dry_run:
         for s in todo:
@@ -255,12 +293,14 @@ def main() -> None:
         client.delete_item_from_playlist(playlist_uuid, item["id"])
     print(f"Removed {len(removals)} items")
 
-    by_key = {s.key: s for s in styles}
-    for key, item in current.items():
-        dream, style = item["dreamItem"], by_key[key]
-        if (dream.get("name"), dream.get("description")) != (style.name, style.section):
-            client.update_dream(dream["uuid"], {"name": style.name, "description": style.section})
-            print(f"Renamed {dream['uuid']} -> {style.name} [{style.section}]")
+    failed = 0
+    for uuid, update in patches.items():
+        try:
+            client.update_dream(uuid, update)
+        except Exception as e:
+            failed += 1
+            print(f"  Failed to update {uuid}: {e}", file=sys.stderr)
+    print(f"Updated {len(patches) - failed} dreams in place" + (f", {failed} failed" if failed else ""))
 
     def rank(item: dict[str, Any]) -> tuple[int, int]:
         style = match_style(parse_recipe(item.get("dreamItem") or {}), styles)
