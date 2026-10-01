@@ -1,0 +1,14 @@
+{
+  "styles": "https://raw.githubusercontent.com/lumenastrum/clio-style-preview/main/styles.json",
+  "algorithm": "krea-2-turbo",
+  "size": "1280*720",
+  "seed": 42,
+  "subject": "a couple holding hands, looking at the camera, in front of the sky with clouds, stars, and the moon. The large quarter moon is in the center of the image, in between the couple. Three five-pointed stars shine brighter.",
+  "prompt_template": "Style: {name}: {prose}. Subject: {subject}",
+  "ccbyLicense": true,
+  "playlist": {
+    "name": "Krea 2 Turbo Style Presets",
+    "description": "frontend#770: from clio-style-preview styles.json\nhttps://lumenastrum.github.io/clio-style-preview/gallery/",
+    "nsfw": false
+  }
+}

@@ -24,6 +24,7 @@ scripts/
   run_krea_2_turbo_batch.py     # Text-to-image (Krea 2 Turbo, fal)
   run_krea_2_turbo_style_batch.py # Style-guided image generation (Krea 2 Turbo, fal)
   run_kling_i2v_batch.py       # Image-to-video (Kling 3.0 / 2.5 Turbo, fal)
+  run_style_preset_playlist.py # One dream per style from a styles file -> preset playlist
   images/                      # Sample image assets
 configs/
   job.json                     # Wan I2V config template
@@ -33,6 +34,7 @@ configs/
   flux-kontext-i2i-config.json # FLUX Kontext i2i config
   krea-2-turbo-config.json     # Krea 2 Turbo config
   krea-2-turbo-style-config.json # Krea 2 Turbo style reference config
+  style-preset-playlist-config.json # Style presets: subject, seed, styles source
   kling-i2v-config.json        # Kling i2v config
   ltx-i2v-config.json          # LTX i2v config
 src/edream-sdk/                # SDK submodule
@@ -50,6 +52,7 @@ python3 scripts/run_flux_kontext_i2i_batch.py # FLUX Kontext image-to-image (fal
 python3 scripts/run_krea_2_turbo_batch.py     # Krea 2 Turbo text-to-image (fal)
 python3 scripts/run_krea_2_turbo_style_batch.py # Krea 2 Turbo style-guided images (fal)
 python3 scripts/run_kling_i2v_batch.py       # Kling image-to-video (fal)
+python3 scripts/run_style_preset_playlist.py --env stage --dry-run  # Style preset playlist (see docstring)
 ```
 
 ## Key Patterns
