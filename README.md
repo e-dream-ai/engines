@@ -76,18 +76,18 @@ python3 scripts/run_wan_i2v_batch.py
 ### 2. Uprez Batch — removed
 
 `run_uprez_batch.py` has been removed. It predated the backend's native
-`uprez_playlist` algorithm and hand-built the derived dreams, which produced a
+`enhance_playlist` algorithm (then called `uprez_playlist`) and hand-built the derived dreams, which produced a
 playlist that could not be re-run, could not requeue failed dreams, could not be
 cancelled as a unit, and had no keyframes. It also appended a tracking marker to
 each _source_ dream's description, corrupting descriptions that carry real
 metadata.
 
-Use `python-api/scripts/uprez_playlist.py` instead. It creates a derived playlist
+Use `python-api/scripts/enhance_playlist.py` instead. It creates a derived playlist
 whose own prompt names the source, and lets the backend materialize and link the
 dreams:
 
 ```bash
-python scripts/uprez_playlist.py <source_playlist_uuid> \
+python scripts/enhance_playlist.py <source_playlist_uuid> \
     --upscale-factor 2 --interpolation-factor 2
 ```
 
@@ -275,12 +275,12 @@ python3 scripts/run_disco_batch.py
 it produced had no `source_dream_uuid` linking them to their sources and could
 not be re-run, requeued, cancelled as a unit, or played continuously.
 
-Use `python-api/scripts/uprez_playlist.py` with the VSR algorithm. RTX VSR is
+Use `python-api/scripts/enhance_playlist.py` with the VSR algorithm. RTX VSR is
 resolution-only, so it takes no interpolation factor and its quality is the
 NVIDIA enum (LOW/MEDIUM/HIGH/ULTRA), not the x264 preset:
 
 ```bash
-python scripts/uprez_playlist.py <source_playlist_uuid> \
+python scripts/enhance_playlist.py <source_playlist_uuid> \
     --dream-algorithm nvidia-uprez --upscale-factor 2 --quality ULTRA
 ```
 
