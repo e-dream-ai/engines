@@ -15,11 +15,15 @@ This directory contains Python-based engines and batch processing scripts for th
 2.  **Environment Variables**:
     Create a `.env` file in the `engines` directory (or use the one in the project root). `BACKEND_URL` and `API_KEY` are required. Deployment-specific UUIDs used as test inputs also live here; configs reference them with `${VAR}` (e.g. `"image_uuid": "${STILL_UUID}"`). You can copy `.env.example` and replace the API_KEY.
     ```
-    BACKEND_URL=https://api.infinidream.ai/api/v1
-    API_KEY=your_api_key_here
-    STILL_UUID=an-image-dream-uuid          # source for i2i / i2v scripts
-    DREAM_UUID=a-video-dream-uuid            # source for video scripts
+    BACKEND_URL=https://api-stage.infinidream.ai/api/v1   # stage
+    # BACKEND_URL=https://api.infinidream.ai/api/v1       # alpha
+    API_KEY=your_api_key_here                             # from the same environment as BACKEND_URL
+    STILL_UUID=an-image-dream-uuid                        # source for i2i / i2v configs
+    STILL_PLAYLIST_UUID=an-image-playlist-uuid            # source playlist for job.json (Wan i2v)
+    DREAM_UUID=a-video-dream-uuid                         # source for video-input tests
     ```
+
+    The UUIDs only exist in the environment they were created in, so stage and alpha need different values.
 
 ## Guidance / CFG
 
